@@ -1,22 +1,50 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "mysql"
 }
 
+
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
+  id        Int        @id @default(autoincrement())
+  email     String     @unique
   password  String
-  name      String?
+  name      String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Pet {
+  id                  Int        @id @default(autoincrement())
+  name                String
+  species             String     // 'Dog', 'Cat', 'Rabbit'
+  breed               String
+  age                 Int
+  ageUnit             String     @default("months") // 'months' or 'years'
+  gender              String     @default("Unknown") // 'Male', 'Female', 'Unknown'
+  height              Float
+  heightUnit          String     @default("cm") // 'cm' or 'inches'
+  color               String
+  description         String?    @db.Text
+  image               String     @default("")
+  vaccinationStatus   String     @default("Upcoming") // 'Completed', 'Upcoming', 'Overdue'
+  vaccinations        Json? // Store vaccinations array as JSON
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  adoptions           Adoption[]
+}
+
+model Adoption {
+  id        Int      @id @default(autoincrement())
+  petId     Int
+  pet       Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  fullName  String
+  email     String
+  phone     String
+  address   String
+  reason    String   @db.Text
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

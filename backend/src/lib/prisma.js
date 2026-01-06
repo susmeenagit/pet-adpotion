@@ -1,7 +1,11 @@
-import pkg from '@prisma/client';
-const { PrismaClient } = pkg;
+import "dotenv/config";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { PrismaClient } from "@prisma/client";
 
-// Create a single shared Prisma Client instance for the app
-const prisma = new PrismaClient();
+const adapter = new PrismaMariaDb(process.env.DATABASE_URL);
 
-export { PrismaClient, prisma };
+const prisma = new PrismaClient({
+  adapter,
+});
+
+export { prisma };

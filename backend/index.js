@@ -3,6 +3,8 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import authRoutes from './src/routes/authRoutes.js';
+import petRoutes from './src/routes/petRoutes.js';
+import adoptionRoutes from './src/routes/adoptionRoutes.js';
 
 const app = express();
 
@@ -13,7 +15,10 @@ app.use(cors({
   credentials: true,
 }));
 
+// Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/pets', petRoutes);
+app.use('/api/adoption', adoptionRoutes);
 
 app.get('/', (req, res) => res.json({ ok: true, message: 'Pet Adoption API' }));
 
