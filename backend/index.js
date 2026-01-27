@@ -16,6 +16,9 @@ app.use(cors({
   credentials: true,
 }));
 
+// Serve uploaded files
+app.use('/uploads', express.static('uploads'));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/pets', petRoutes);

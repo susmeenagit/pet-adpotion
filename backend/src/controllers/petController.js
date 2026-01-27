@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma.js';
+import { getImageUrl, deleteImageFile } from '../middleware/uploadMiddleware.js';
 
 // Get all pets with optional filters
 export const getPets = async (req, res) => {
@@ -23,7 +24,14 @@ export const getPets = async (req, res) => {
       where,
       orderBy: { createdAt: 'desc' },
     });
-    res.json({ pets });
+
+    // Add complete image URLs
+    const petsWithUrls = pets.map(pet => ({
+      ...pet,
+      image: pet.image ? getImageUrl(pet.image) : '',
+    }));
+
+    res.json({ pets: petsWithUrls });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error' });
@@ -42,6 +50,11 @@ export const getPetById = async (req, res) => {
       return res.status(404).json({ error: 'Pet not found' });
     }
 
+    // Add complete image URL
+    if (pet.image) {
+      pet.image = getImageUrl(pet.image);
+    }
+
     res.json({ pet });
   } catch (error) {
     console.error(error);
@@ -56,7 +69,14 @@ export const getFeaturedPets = async (req, res) => {
       take: 6,
       orderBy: { createdAt: 'desc' },
     });
-    res.json({ pets });
+
+    // Add complete image URLs
+    const petsWithUrls = pets.map(pet => ({
+      ...pet,
+      image: pet.image ? getImageUrl(pet.image) : '',
+    }));
+
+    res.json({ pets: petsWithUrls });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error' });
@@ -68,7 +88,7 @@ export const getFeaturedPets = async (req, res) => {
 // Create new pet (admin only)
 export const createPet = async (req, res) => {
   try {
-    const { name, species, breed, age, ageUnit, gender, height, heightUnit, color, description, image, vaccinationStatus, vaccinations } = req.body;
+    const { name, species, breed, age, ageUnit, gender, height, heightUnit, color, description, vaccinationStatus, vaccinations } = req.body;
 
     if (!name || !species || !breed) {
       return res.status(400).json({ error: 'Name, species, and breed are required' });
@@ -78,27 +98,43 @@ export const createPet = async (req, res) => {
       return res.status(400).json({ error: 'Species must be Dog, Cat, or Rabbit' });
     }
 
+    // Handle image upload
+    let imageFilename = '';
+    if (req.file) {
+      imageFilename = req.file.filename;
+    }
+
     const pet = await prisma.pet.create({
       data: {
         name,
         species,
         breed,
-        age: age || 0,
+        age: age ? parseInt(age) : 0,
         ageUnit: ageUnit || 'months',
         gender: gender || 'Unknown',
-        height: height || 0,
+        height: height ? parseFloat(height) : 0,
         heightUnit: heightUnit || 'cm',
         color,
         description,
-        image,
+        image: imageFilename,
         vaccinationStatus: vaccinationStatus || 'Upcoming',
-        vaccinations: vaccinations || [],
+        vaccinations: vaccinations ? JSON.parse(vaccinations) : [],
       },
     });
 
-    res.status(201).json({ message: 'Pet created successfully', pet });
+    // Return pet with complete image URL
+    const petWithUrl = {
+      ...pet,
+      image: pet.image ? getImageUrl(pet.image) : '',
+    };
+
+    res.status(201).json({ message: 'Pet created successfully', pet: petWithUrl });
   } catch (error) {
     console.error(error);
+    // Delete uploaded file if creation fails
+    if (req.file) {
+      deleteImageFile(req.file.filename);
+    }
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -107,34 +143,63 @@ export const createPet = async (req, res) => {
 export const updatePet = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, species, breed, age, ageUnit, gender, height, heightUnit, color, description, image, vaccinationStatus, vaccinations } = req.body;
+    const { name, species, breed, age, ageUnit, gender, height, heightUnit, color, description, vaccinationStatus, vaccinations } = req.body;
 
     if (species && !['Dog', 'Cat', 'Rabbit'].includes(species)) {
       return res.status(400).json({ error: 'Species must be Dog, Cat, or Rabbit' });
     }
 
-    const pet = await prisma.pet.update({
+    // Fetch existing pet to get old image
+    const existingPet = await prisma.pet.findUnique({
       where: { id: parseInt(id) },
-      data: {
-        ...(name && { name }),
-        ...(species && { species }),
-        ...(breed && { breed }),
-        ...(age !== undefined && { age: parseInt(age) }),
-        ...(ageUnit && { ageUnit }),
-        ...(gender && { gender }),
-        ...(height !== undefined && { height: parseFloat(height) }),
-        ...(heightUnit && { heightUnit }),
-        ...(color && { color }),
-        ...(description && { description }),
-        ...(image && { image }),
-        ...(vaccinationStatus && { vaccinationStatus }),
-        ...(vaccinations && { vaccinations }),
-      },
     });
 
-    res.json({ message: 'Pet updated successfully', pet });
+    if (!existingPet) {
+      if (req.file) deleteImageFile(req.file.filename);
+      return res.status(404).json({ error: 'Pet not found' });
+    }
+
+    // Handle new image upload
+    let imageFilename = existingPet.image;
+    if (req.file) {
+      imageFilename = req.file.filename;
+      // Delete old image if it exists
+      if (existingPet.image && !existingPet.image.startsWith('http')) {
+        deleteImageFile(existingPet.image);
+      }
+    }
+
+    const updateData = {
+      ...(name && { name }),
+      ...(species && { species }),
+      ...(breed && { breed }),
+      ...(age !== undefined && { age: parseInt(age) }),
+      ...(ageUnit && { ageUnit }),
+      ...(gender && { gender }),
+      ...(height !== undefined && { height: parseFloat(height) }),
+      ...(heightUnit && { heightUnit }),
+      ...(color && { color }),
+      ...(description && { description }),
+      ...(imageFilename && { image: imageFilename }),
+      ...(vaccinationStatus && { vaccinationStatus }),
+      ...(vaccinations && { vaccinations: JSON.parse(vaccinations) }),
+    };
+
+    const pet = await prisma.pet.update({
+      where: { id: parseInt(id) },
+      data: updateData,
+    });
+
+    // Return pet with complete image URL
+    const petWithUrl = {
+      ...pet,
+      image: pet.image ? getImageUrl(pet.image) : '',
+    };
+
+    res.json({ message: 'Pet updated successfully', pet: petWithUrl });
   } catch (error) {
     console.error(error);
+    if (req.file) deleteImageFile(req.file.filename);
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Pet not found' });
     }

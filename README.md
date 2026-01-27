@@ -104,20 +104,38 @@ npm run dev
 
 The backend will run on `http://localhost:4000`
 
-### Seed Database with Admin User
+### Seed Database with Admin User and Data
 
-To create the admin user, run the seed script:
+To create the admin user and seed the database with realistic data, run the seed script:
 
 ```bash
 cd backend
 npm run seed
 ```
 
-This will create an admin account with the following credentials:
+This will create an admin account and multiple regular user accounts with realistic adoption history:
+
+#### Admin Account
 - **Email**: `admin@petadoption.com`
 - **Password**: `Admin@123`
 
-Use these credentials to log in and access the admin dashboard.
+#### Regular User Accounts (All passwords: `Password@123`)
+1. **John Smith** - john.smith@email.com
+2. **Sarah Johnson** - sarah.johnson@email.com
+3. **Michael Brown** - michael.brown@email.com
+4. **Emily Davis** - emily.davis@email.com
+5. **David Wilson** - david.wilson@email.com
+6. **Jessica Martinez** - jessica.martinez@email.com
+7. **Robert Garcia** - robert.garcia@email.com
+8. **Lisa Anderson** - lisa.anderson@email.com
+
+#### Seed Data Includes:
+- **12 Pets** with realistic information (Dogs, Cats, Rabbits)
+- **8 Adoption Records** with various statuses (Approved, Rejected, Pending)
+- **Quiz Responses** with different completion statuses
+- **Timestamps** spanning 60 days to simulate platform usage over time
+
+Use the admin account to access the admin dashboard at `/admin-dashboard`
 
 ### Frontend Setup
 
@@ -150,11 +168,80 @@ The frontend will run on `http://localhost:5173`
 - `POST /api/auth/login` - Login user
 - `POST /api/auth/logout` - Logout user
 - `GET /api/auth/me` - Get current user (protected)
+- `GET /api/auth/admin/users` - Get all users (admin only)
+- `GET /api/auth/admin/stats` - Get system statistics (admin only)
+- `PUT /api/auth/admin/user/:id/role` - Update user role (admin only)
+- `DELETE /api/auth/admin/user/:id` - Delete user (admin only)
 
 ### Pets
-- `GET /api/pets` - Get all pets (with optional filters)
+- `GET /api/pets` - Get all pets
 - `GET /api/pets/featured` - Get featured pets
 - `GET /api/pets/:id` - Get pet by ID
+- `POST /api/pets/admin/create` - Create pet with image upload (admin only)
+- `PUT /api/pets/admin/update/:id` - Update pet with image (admin only)
+- `DELETE /api/pets/admin/delete/:id` - Delete pet (admin only)
+
+### Adoptions
+- `POST /api/adoption` - Submit adoption application
+- `GET /api/adoption/admin/all` - Get all adoptions (admin only)
+- `GET /api/adoption/admin/:id` - Get adoption by ID (admin only)
+- `PUT /api/adoption/admin/:id/status` - Update adoption status (admin only)
+- `DELETE /api/adoption/admin/:id` - Delete adoption (admin only)
+
+### Quiz
+- `GET /api/quiz` - Get all quizzes
+- `POST /api/quiz/response` - Submit quiz response
+- `GET /api/quiz/admin/responses` - Get all quiz responses (admin only)
+
+## Image Upload
+
+The application supports image uploads for pet profiles using **Multer**:
+
+### Pet Image Upload
+- **Endpoint**: `POST /api/pets/admin/create` or `PUT /api/pets/admin/update/:id`
+- **Content-Type**: `multipart/form-data`
+- **Max File Size**: 5MB
+- **Allowed Formats**: JPG, PNG, GIF, WebP
+- **Storage Location**: `backend/uploads/pets/`
+- **Filename Format**: `pet_timestamp_randomid.extension`
+
+### How It Works:
+1. Admin submits pet form with image file via multipart/form-data
+2. Multer validates and stores image in `backend/uploads/pets/` directory
+3. Only the filename is saved in the database
+4. When fetching pet data, filename is converted to complete URL: `http://localhost:4000/uploads/pets/filename.jpg`
+5. Frontend receives complete URLs ready for display
+6. On update, old image is deleted and new one replaces it
+7. Images are served as static files by Express.js
+
+**Upload Format Example:**
+```javascript
+const formData = new FormData();
+formData.append('name', 'Max');
+formData.append('species', 'Dog');
+formData.append('breed', 'Golden Retriever');
+formData.append('age', '2');
+formData.append('ageUnit', 'years');
+formData.append('gender', 'Male');
+formData.append('height', '60');
+formData.append('color', 'Golden');
+formData.append('description', 'Friendly dog');
+formData.append('image', imageFile); // File object from input
+
+const response = await axios.post('/api/pets/admin/create', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' }
+});
+```
+
+**Image URLs in Response**: Images are automatically served with complete URLs:
+```
+http://localhost:4000/uploads/pets/pet_1704067200000_a1b2c3.jpg
+```
+
+**Backend Processing**:
+- Images stored relative path in database: `pet_1704067200000_a1b2c3.jpg`
+- `getImageUrl()` helper converts to: `http://localhost:4000/uploads/pets/pet_1704067200000_a1b2c3.jpg`
+- Old images auto-deleted on pet update/delete using `deleteImageFile()` helper
 
 ## Pages
 

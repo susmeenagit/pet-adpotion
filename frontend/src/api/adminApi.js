@@ -36,12 +36,20 @@ export const apiAdminStats = {
 // Pet Management APIs (Admin)
 export const apiAdminPets = {
   create: async (petData) => {
-    const response = await axiosInstance.post('/pets/admin/create', petData);
+    const response = await axiosInstance.post('/pets/admin/create', petData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 
   update: async (id, petData) => {
-    const response = await axiosInstance.put(`/pets/admin/update/${id}`, petData);
+    const response = await axiosInstance.put(`/pets/admin/update/${id}`, petData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 
