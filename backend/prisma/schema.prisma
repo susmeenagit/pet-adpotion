@@ -8,12 +8,15 @@ datasource db {
 
 
 model User {
-  id        Int        @id @default(autoincrement())
-  email     String     @unique
-  password  String
-  name      String
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id               Int               @id @default(autoincrement())
+  email            String            @unique
+  password         String
+  name             String
+  isAdmin          Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  quizResponses    QuizResponse[]
+  adoptionVerifications AdoptionVerification[]
 }
 
 model Pet {
@@ -47,4 +50,81 @@ model Adoption {
   reason    String   @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  verifications AdoptionVerification[]
+}
+
+model Quiz {
+  id          Int              @id @default(autoincrement())
+  title       String
+  description String?          @db.Text
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  questions   QuizQuestion[]
+  responses   QuizResponse[]
+}
+
+model QuizQuestion {
+  id          Int              @id @default(autoincrement())
+  quizId      Int
+  quiz        Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  question    String           @db.Text
+  order       Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  options     QuizOption[]
+  responses   QuestionResponse[]
+}
+
+model QuizOption {
+  id          Int              @id @default(autoincrement())
+  questionId  Int
+  question    QuizQuestion     @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  optionText  String           @db.Text
+  isCorrect   Boolean          @default(false)
+  order       Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model QuizResponse {
+  id          Int              @id @default(autoincrement())
+  userId      Int
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizId      Int
+  quiz        Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  status      String           @default("Pending") // 'Pending', 'Completed', 'Verified', 'Rejected'
+  score       Int?
+  totalQuestions Int?
+  answers     QuestionResponse[]
+  adminNotes  String?          @db.Text
+  adoptionVerifications AdoptionVerification[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model QuestionResponse {
+  id          Int              @id @default(autoincrement())
+  responseId  Int
+  response    QuizResponse     @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  questionId  Int
+  question    QuizQuestion     @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOptionId Int?
+  isCorrect   Boolean?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model AdoptionVerification {
+  id          Int              @id @default(autoincrement())
+  adoptionId  Int
+  adoption    Adoption         @relation(fields: [adoptionId], references: [id], onDelete: Cascade)
+  quizResponseId Int?
+  quizResponse QuizResponse?    @relation(fields: [quizResponseId], references: [id], onDelete: SetNull)
+  adminId     Int
+  admin       User             @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  status      String           @default("Pending") // 'Pending', 'Approved', 'Rejected'
+  adminNotes  String?          @db.Text
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 }
