@@ -48,6 +48,7 @@ model Adoption {
   phone     String
   address   String
   reason    String   @db.Text
+  status    String   @default("Pending") // 'Pending', 'Approved', 'Rejected'
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   verifications AdoptionVerification[]

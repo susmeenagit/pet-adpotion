@@ -89,3 +89,140 @@ export const me = (req, res) => {
   const user = req.user;
   return res.json({ user });
 };
+
+// ============= ADMIN ROUTES =============
+
+// Get all users (admin only)
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isAdmin: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ users });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// Get single user by ID (admin only)
+export const getUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { id: parseInt(id) },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isAdmin: true,
+        createdAt: true,
+        updatedAt: true,
+        quizResponses: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// Update user role (admin only)
+export const updateUserRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isAdmin } = req.body;
+
+    if (typeof isAdmin !== 'boolean') {
+      return res.status(400).json({ error: 'isAdmin must be a boolean' });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: parseInt(id) },
+      data: { isAdmin },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isAdmin: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    res.json({ message: 'User role updated successfully', user });
+  } catch (error) {
+    console.error(error);
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// Delete user (admin only)
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const currentUserId = req.user.id;
+
+    // Prevent admin from deleting themselves
+    if (parseInt(id) === currentUserId) {
+      return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+
+    await prisma.user.delete({
+      where: { id: parseInt(id) },
+    });
+
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// Get system statistics (admin only)
+export const getSystemStats = async (req, res) => {
+  try {
+    const totalUsers = await prisma.user.count();
+    const totalAdmins = await prisma.user.count({ where: { isAdmin: true } });
+    const totalPets = await prisma.pet.count();
+    const totalAdoptions = await prisma.adoption.count();
+    const totalQuizzes = await prisma.quiz.count();
+    const totalQuizResponses = await prisma.quizResponse.count();
+
+    res.json({
+      stats: {
+        totalUsers,
+        totalAdmins,
+        totalPets,
+        totalAdoptions,
+        totalQuizzes,
+        totalQuizResponses,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
