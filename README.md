@@ -104,6 +104,21 @@ npm run dev
 
 The backend will run on `http://localhost:4000`
 
+### Seed Database with Admin User
+
+To create the admin user, run the seed script:
+
+```bash
+cd backend
+npm run seed
+```
+
+This will create an admin account with the following credentials:
+- **Email**: `admin@petadoption.com`
+- **Password**: `Admin@123`
+
+Use these credentials to log in and access the admin dashboard.
+
 ### Frontend Setup
 
 1. Navigate to frontend directory:
@@ -144,11 +159,12 @@ The frontend will run on `http://localhost:5173`
 ## Pages
 
 1. **Home** (`/`) - Landing page with featured pets
-2. **Browse Pets** (`/pets`) - Browse and filter pets
-3. **Pet Details** (`/pets/:id`) - Detailed pet information with vaccination table
-4. **Vaccination Schedule** (`/vaccination-schedule`) - Interactive vaccination schedule generator
+2. **Browse Pets** (`/browse-pets`) - Browse and filter pets
+3. **Pet Details** (`/pet-details/:id`) - Detailed pet information with vaccination table
+4. **Vaccination Schedule** (`/vaccination`) - Interactive vaccination schedule generator
 5. **Care Tips** (`/care-tips`) - Nutrition & feeding information
-6. **Auth** (`/login`) - Login/Register page
+6. **Login/Register** (`/login`) - Login/Register page
+7. **Admin Dashboard** (`/admin-dashboard`) - Admin panel (accessible only for admin users)
 
 ## Pet Types
 

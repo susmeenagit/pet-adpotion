@@ -35,7 +35,13 @@ const LoginRegister = () => {
       })
 
       setAuth(user) // optional global state
-      navigate('/')
+      
+      // Check if user is admin and redirect to admin dashboard
+      if (user.isAdmin) {
+        navigate('/admin-dashboard')
+      } else {
+        navigate('/')
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed')
     } finally {

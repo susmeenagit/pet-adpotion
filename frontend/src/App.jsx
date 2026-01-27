@@ -9,6 +9,7 @@ import AdoptionProcess from './pages/AdoptionProcess'
 import VaccinationSchedule from './pages/VaccinationSchedule'
 import PetCareTips from './pages/PetCareTips'
 import LoginRegister from './pages/LoginRegister'
+import AdminDashboard from './pages/AdminDashboard'
 
 function App() {
   useEffect(() => {
@@ -26,6 +27,7 @@ function App() {
         <Route path="/vaccination" element={<VaccinationSchedule />} />
         <Route path="/care-tips" element={<PetCareTips />} />
         <Route path="/login" element={<LoginRegister />} />
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
       </Routes>
     </Router>
   )
