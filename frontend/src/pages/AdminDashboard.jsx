@@ -17,6 +17,7 @@ const AdminDashboard = () => {
   const [petsLoading, setPetsLoading] = useState(false)
   const [adoptionsLoading, setAdoptionsLoading] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  
 
   useEffect(() => {
     const fetchUserAndStats = async () => {
@@ -152,8 +153,8 @@ const AdminDashboard = () => {
           <div className="flex items-center gap-4">
             <div className="text-4xl">🐾</div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">Pet Adoption Admin</h1>
-              <p className="text-sm text-gray-600">Management Dashboard</p>
+              <h1 className="text-2xl font-bold text-gray-800">Admin</h1>
+              <p className="text-sm text-gray-600">Welcome to dashboard</p>
             </div>
           </div>
           
@@ -234,7 +235,11 @@ const AdminDashboard = () => {
                     ? 'text-purple-600 border-b-2 border-purple-600'
                     : 'text-gray-600 hover:text-gray-800'
                 }`}
-              >
+
+                >
+                  
+
+
                 🐕 Pets
               </button>
               <button
@@ -420,6 +425,8 @@ const AdminDashboard = () => {
             </div>
           )}
 
+          
+
           {/* ADOPTIONS TAB */}
           {activeTab === 'adoptions' && (
             <div className="bg-white rounded-lg shadow-lg p-8">
@@ -484,6 +491,7 @@ const AdminDashboard = () => {
               )}
             </div>
           )}
+          
 
           {/* PROFILE TAB */}
           {activeTab === 'profile' && (

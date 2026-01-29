@@ -104,7 +104,7 @@ export const seedPets = async () => {
   try {
     const count = await prisma.pet.count();
     if (count > 0) {
-      console.log('Pets already seeded');
+      console.log('✅ Pets already seeded');
       return;
     }
 
@@ -119,9 +119,13 @@ export const seedPets = async () => {
         height: 60,
         heightUnit: 'cm',
         color: 'Golden',
-        description: 'Friendly and energetic Golden Retriever who loves playing fetch. Perfect family dog.',
+        description: 'Friendly and energetic Golden Retriever who loves playing fetch.',
         image: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=300&fit=crop',
         vaccinationStatus: 'Completed',
+        vaccinations: JSON.stringify([
+          { age: '6-8 weeks', vaccineType: 'DHPP', status: 'Completed' },
+          { age: '10-12 weeks', vaccineType: 'DHPP + Rabies', status: 'Completed' }
+        ]),
       },
       {
         name: 'Luna',
@@ -136,6 +140,10 @@ export const seedPets = async () => {
         description: 'Gentle and affectionate Persian cat. Perfect for a quiet home.',
         image: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400&h=300&fit=crop',
         vaccinationStatus: 'Completed',
+        vaccinations: JSON.stringify([
+          { age: '6-8 weeks', vaccineType: 'FVRCP', status: 'Completed' },
+          { age: '10-12 weeks', vaccineType: 'FVRCP + Rabies', status: 'Completed' }
+        ]),
       },
       {
         name: 'Bunny',
@@ -150,6 +158,10 @@ export const seedPets = async () => {
         description: 'Playful and curious Holland Lop rabbit. Great for families.',
         image: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=400&h=300&fit=crop',
         vaccinationStatus: 'Upcoming',
+        vaccinations: JSON.stringify([
+          { age: '5-7 weeks', vaccineType: 'Myxomatosis', status: 'Upcoming' },
+          { age: '10-12 weeks', vaccineType: 'RHD (Rabbit Hemorrhagic Disease)', status: 'Upcoming' }
+        ]),
       },
       {
         name: 'Buddy',
@@ -164,6 +176,10 @@ export const seedPets = async () => {
         description: 'Loyal and playful Labrador. Excellent with families and children.',
         image: 'https://images.unsplash.com/photo-1534361960057-19889dbdf1bb?w=400&h=300&fit=crop',
         vaccinationStatus: 'Completed',
+        vaccinations: JSON.stringify([
+          { age: '6-8 weeks', vaccineType: 'DHPP', status: 'Completed' },
+          { age: '10-12 weeks', vaccineType: 'DHPP + Rabies', status: 'Completed' }
+        ]),
       },
       {
         name: 'Whiskers',
@@ -178,6 +194,10 @@ export const seedPets = async () => {
         description: 'Curious and playful Siamese kitten. Very social and vocal.',
         image: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&h=300&fit=crop',
         vaccinationStatus: 'Upcoming',
+        vaccinations: JSON.stringify([
+          { age: '6-8 weeks', vaccineType: 'FVRCP', status: 'Upcoming' },
+          { age: '10-12 weeks', vaccineType: 'FVRCP + Rabies', status: 'Upcoming' }
+        ]),
       },
       {
         name: 'Thumper',
@@ -192,6 +212,10 @@ export const seedPets = async () => {
         description: 'Fluffy Angora rabbit. Gentle and calm temperament.',
         image: 'https://images.unsplash.com/photo-1459262838948-3e416b11c5b6?w=400&h=300&fit=crop',
         vaccinationStatus: 'Completed',
+        vaccinations: JSON.stringify([
+          { age: '5-7 weeks', vaccineType: 'Myxomatosis', status: 'Completed' },
+          { age: '10-12 weeks', vaccineType: 'RHD (Rabbit Hemorrhagic Disease)', status: 'Completed' }
+        ]),
       },
       {
         name: 'Charlie',
@@ -206,6 +230,10 @@ export const seedPets = async () => {
         description: 'Energetic Beagle with a great nose for adventure. Needs active family.',
         image: 'https://images.unsplash.com/photo-1505628346881-b72b27e84530?w=400&h=300&fit=crop',
         vaccinationStatus: 'Completed',
+        vaccinations: JSON.stringify([
+          { age: '6-8 weeks', vaccineType: 'DHPP', status: 'Completed' },
+          { age: '10-12 weeks', vaccineType: 'DHPP + Rabies', status: 'Completed' }
+        ]),
       },
       {
         name: 'Mittens',
@@ -220,6 +248,10 @@ export const seedPets = async () => {
         description: 'Sweet tabby cat with white paws. Loves cuddles and sunny spots.',
         image: 'https://images.unsplash.com/photo-1519052537078-e6302a4968d4?w=400&h=300&fit=crop',
         vaccinationStatus: 'Completed',
+        vaccinations: JSON.stringify([
+          { age: '6-8 weeks', vaccineType: 'FVRCP', status: 'Completed' },
+          { age: '10-12 weeks', vaccineType: 'FVRCP + Rabies', status: 'Completed' }
+        ]),
       },
       {
         name: 'Pepper',
@@ -234,6 +266,10 @@ export const seedPets = async () => {
         description: 'Tiny Dwarf Hotot with distinctive eye markings. Perfect apartment pet.',
         image: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=400&h=300&fit=crop',
         vaccinationStatus: 'Upcoming',
+        vaccinations: JSON.stringify([
+          { age: '5-7 weeks', vaccineType: 'Myxomatosis', status: 'Upcoming' },
+          { age: '10-12 weeks', vaccineType: 'RHD (Rabbit Hemorrhagic Disease)', status: 'Upcoming' }
+        ]),
       },
       {
         name: 'Rocky',
@@ -248,6 +284,10 @@ export const seedPets = async () => {
         description: 'Strong and intelligent German Shepherd. Trained for obedience.',
         image: 'https://images.unsplash.com/photo-1568393691622-d4f6d6f7f8e8?w=400&h=300&fit=crop',
         vaccinationStatus: 'Completed',
+        vaccinations: JSON.stringify([
+          { age: '6-8 weeks', vaccineType: 'DHPP', status: 'Completed' },
+          { age: '10-12 weeks', vaccineType: 'DHPP + Rabies', status: 'Completed' }
+        ]),
       },
       {
         name: 'Smokey',
@@ -262,6 +302,10 @@ export const seedPets = async () => {
         description: 'Elegant Russian Blue with striking green eyes. Calm and affectionate.',
         image: 'https://images.unsplash.com/photo-1574144611937-0df059b5ef3e?w=400&h=300&fit=crop',
         vaccinationStatus: 'Completed',
+        vaccinations: JSON.stringify([
+          { age: '6-8 weeks', vaccineType: 'FVRCP', status: 'Completed' },
+          { age: '10-12 weeks', vaccineType: 'FVRCP + Rabies', status: 'Completed' }
+        ]),
       },
       {
         name: 'Hop',
@@ -276,17 +320,15 @@ export const seedPets = async () => {
         description: 'Adorable lop-eared rabbit with soft fur. Loves timothy hay.',
         image: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=400&h=300&fit=crop',
         vaccinationStatus: 'Completed',
+        vaccinations: JSON.stringify([
+          { age: '5-7 weeks', vaccineType: 'Myxomatosis', status: 'Completed' },
+          { age: '10-12 weeks', vaccineType: 'RHD (Rabbit Hemorrhagic Disease)', status: 'Completed' }
+        ]),
       },
     ];
 
-    // Add vaccinations to each pet
-    for (const pet of pets) {
-      const ageInMonths = pet.ageUnit === 'years' ? pet.age * 12 : pet.age;
-      pet.vaccinations = JSON.stringify(getVaccinations(pet.species, ageInMonths));
-    }
-
     await prisma.pet.createMany({ data: pets });
-    console.log(`Seeded ${pets.length} pets successfully`);
+    console.log(`✅ Seeded ${pets.length} pets successfully`);
   } catch (error) {
     console.error('Error seeding pets:', error);
   }

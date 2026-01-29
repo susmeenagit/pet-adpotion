@@ -9,7 +9,7 @@ export const seedAdmin = async () => {
     });
 
     if (adminExists) {
-      console.log('Admin user already exists');
+      console.log('✅ Admin user already exists');
       return;
     }
 
@@ -25,9 +25,9 @@ export const seedAdmin = async () => {
       },
     });
 
-    console.log('Admin user created successfully');
-    console.log('Email: admin@petadoption.com');
-    console.log('Password: Admin@123');
+    console.log('✅ Admin user created successfully');
+    console.log('   Email: admin@petadoption.com');
+    console.log('   Password: Admin@123');
     return admin;
   } catch (error) {
     console.error('Error seeding admin:', error);

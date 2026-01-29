@@ -31,6 +31,12 @@ const Navbar = () => {
               to="/browse-pets"
               className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
             >
+               <Link
+              to="/quiz"
+              className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
+            >
+              Smart Quiz
+            </Link>
               Browse Pets
             </Link>
             <Link

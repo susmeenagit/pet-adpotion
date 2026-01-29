@@ -117,7 +117,7 @@ export const createPet = async (req, res) => {
         color,
         description,
         image: imageFilename,
-        vaccinationStatus: vaccinationStatus || 'Upcoming',
+        vaccinationStatus: vaccinationStatus || ' Upcoming',
         vaccinations: vaccinations ? JSON.parse(vaccinations) : [],
       },
     });

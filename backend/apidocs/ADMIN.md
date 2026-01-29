@@ -173,7 +173,7 @@ Admin user must have `isAdmin: true` in the database.
 ```json
 {
   "name": "Buddy Updated",
-  "vaccinationStatus": "Upcoming"
+  "vaccinationStatus": " Upcoming"
 }
 ```
 - **Response**: Same as Create Pet response
