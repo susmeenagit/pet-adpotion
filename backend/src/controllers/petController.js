@@ -1,17 +1,20 @@
 import { prisma } from '../lib/prisma.js';
+import { response } from '../utils/response.js';
+import { validators } from '../utils/validators.js';
+import { logger } from '../utils/logger.js';
 import { getImageUrl, deleteImageFile } from '../middleware/uploadMiddleware.js';
 
-// Get all pets with optional filters
-export const getPets = async (req, res) => {
+/**
+ * Get all pets with filters
+ */
+export const getAllPets = async (req, res) => {
   try {
-    const { species, breed, age, height, color, search } = req.query;
+    const { species, breed, search, page = 1, limit = 10 } = req.query;
+    
     const where = {};
-
+    
     if (species) where.species = species;
     if (breed) where.breed = { contains: breed, mode: 'insensitive' };
-    if (color) where.color = { contains: color, mode: 'insensitive' };
-    if (age) where.age = { lte: parseInt(age) };
-    if (height) where.height = { lte: parseFloat(height) };
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -20,34 +23,51 @@ export const getPets = async (req, res) => {
       ];
     }
 
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
     const pets = await prisma.pet.findMany({
       where,
+      skip,
+      take: parseInt(limit),
       orderBy: { createdAt: 'desc' },
     });
+
+    const total = await prisma.pet.count({ where });
 
     // Add complete image URLs
     const petsWithUrls = pets.map(pet => ({
       ...pet,
-      image: pet.image ? getImageUrl(pet.image) : '',
+      image: pet.image ? getImageUrl(pet.image) : null,
     }));
 
-    res.json({ pets: petsWithUrls });
+    return response.success(res, {
+      pets: petsWithUrls,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit)),
+      },
+    }, 'Pets retrieved');
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
+    logger.error('Get all pets error:', error.message);
+    return response.error(res, 'Failed to retrieve pets', 500);
   }
 };
 
-// Get single pet by ID
+/**
+ * Get pet by ID
+ */
 export const getPetById = async (req, res) => {
   try {
     const { id } = req.params;
+
     const pet = await prisma.pet.findUnique({
       where: { id: parseInt(id) },
     });
 
     if (!pet) {
-      return res.status(404).json({ error: 'Pet not found' });
+      return response.notFound(res, 'Pet not found');
     }
 
     // Add complete image URL
@@ -55,14 +75,16 @@ export const getPetById = async (req, res) => {
       pet.image = getImageUrl(pet.image);
     }
 
-    res.json({ pet });
+    return response.success(res, { pet }, 'Pet retrieved');
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
+    logger.error('Get pet by ID error:', error.message);
+    return response.error(res, 'Failed to retrieve pet', 500);
   }
 };
 
-// Get featured pets (for homepage)
+/**
+ * Get featured pets (homepage)
+ */
 export const getFeaturedPets = async (req, res) => {
   try {
     const pets = await prisma.pet.findMany({
@@ -73,32 +95,33 @@ export const getFeaturedPets = async (req, res) => {
     // Add complete image URLs
     const petsWithUrls = pets.map(pet => ({
       ...pet,
-      image: pet.image ? getImageUrl(pet.image) : '',
+      image: pet.image ? getImageUrl(pet.image) : null,
     }));
 
-    res.json({ pets: petsWithUrls });
+    return response.success(res, { pets: petsWithUrls }, 'Featured pets retrieved');
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
+    logger.error('Get featured pets error:', error.message);
+    return response.error(res, 'Failed to retrieve featured pets', 500);
   }
 };
 
-// ============= ADMIN ROUTES =============
+// ============= ADMIN ENDPOINTS =============
 
-// Create new pet (admin only)
+/**
+ * Create new pet (admin only)
+ */
 export const createPet = async (req, res) => {
   try {
     const { name, species, breed, age, ageUnit, gender, height, heightUnit, color, description, vaccinationStatus, vaccinations } = req.body;
 
-    if (!name || !species || !breed) {
-      return res.status(400).json({ error: 'Name, species, and breed are required' });
+    // Validate pet data
+    const validation = validators.validatePetData({ name, species, breed, age });
+    if (!validation.valid) {
+      if (req.file) deleteImageFile(req.file.filename);
+      return response.badRequest(res, 'Validation error: ' + Object.values(validation.errors).join(', '));
     }
 
-    if (!['Dog', 'Cat', 'Rabbit'].includes(species)) {
-      return res.status(400).json({ error: 'Species must be Dog, Cat, or Rabbit' });
-    }
-
-    // Handle image upload
+    // Handle image
     let imageFilename = '';
     if (req.file) {
       imageFilename = req.file.filename;
@@ -114,10 +137,10 @@ export const createPet = async (req, res) => {
         gender: gender || 'Unknown',
         height: height ? parseFloat(height) : 0,
         heightUnit: heightUnit || 'cm',
-        color,
-        description,
+        color: color || '',
+        description: description || '',
         image: imageFilename,
-        vaccinationStatus: vaccinationStatus || ' Upcoming',
+        vaccinationStatus: vaccinationStatus || 'Upcoming',
         vaccinations: vaccinations ? JSON.parse(vaccinations) : [],
       },
     });
@@ -125,45 +148,48 @@ export const createPet = async (req, res) => {
     // Return pet with complete image URL
     const petWithUrl = {
       ...pet,
-      image: pet.image ? getImageUrl(pet.image) : '',
+      image: pet.image ? getImageUrl(pet.image) : null,
     };
 
-    res.status(201).json({ message: 'Pet created successfully', pet: petWithUrl });
+    logger.info(`Pet created: ${pet.name} (${species})`);
+
+    return response.created(res, { pet: petWithUrl }, 'Pet created successfully');
   } catch (error) {
-    console.error(error);
-    // Delete uploaded file if creation fails
-    if (req.file) {
-      deleteImageFile(req.file.filename);
-    }
-    res.status(500).json({ error: 'Server error' });
+    if (req.file) deleteImageFile(req.file.filename);
+    logger.error('Create pet error:', error.message);
+    return response.error(res, 'Failed to create pet', 500);
   }
 };
 
-// Update pet (admin only)
+/**
+ * Update pet (admin only)
+ */
 export const updatePet = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, species, breed, age, ageUnit, gender, height, heightUnit, color, description, vaccinationStatus, vaccinations } = req.body;
 
-    if (species && !['Dog', 'Cat', 'Rabbit'].includes(species)) {
-      return res.status(400).json({ error: 'Species must be Dog, Cat, or Rabbit' });
+    // Validate species if provided
+    if (species && !validators.isValidSpecies(species)) {
+      if (req.file) deleteImageFile(req.file.filename);
+      return response.badRequest(res, 'Species must be Dog, Cat, or Rabbit');
     }
 
-    // Fetch existing pet to get old image
+    // Fetch existing pet
     const existingPet = await prisma.pet.findUnique({
       where: { id: parseInt(id) },
     });
 
     if (!existingPet) {
       if (req.file) deleteImageFile(req.file.filename);
-      return res.status(404).json({ error: 'Pet not found' });
+      return response.notFound(res, 'Pet not found');
     }
 
-    // Handle new image upload
+    // Handle image replacement
     let imageFilename = existingPet.image;
     if (req.file) {
       imageFilename = req.file.filename;
-      // Delete old image if it exists
+      // Delete old image
       if (existingPet.image && !existingPet.image.startsWith('http')) {
         deleteImageFile(existingPet.image);
       }
@@ -193,36 +219,55 @@ export const updatePet = async (req, res) => {
     // Return pet with complete image URL
     const petWithUrl = {
       ...pet,
-      image: pet.image ? getImageUrl(pet.image) : '',
+      image: pet.image ? getImageUrl(pet.image) : null,
     };
 
-    res.json({ message: 'Pet updated successfully', pet: petWithUrl });
+    logger.info(`Pet updated: ${pet.name} (ID: ${id})`);
+
+    return response.success(res, { pet: petWithUrl }, 'Pet updated successfully');
   } catch (error) {
-    console.error(error);
     if (req.file) deleteImageFile(req.file.filename);
     if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Pet not found' });
+      return response.notFound(res, 'Pet not found');
     }
-    res.status(500).json({ error: 'Server error' });
+    logger.error('Update pet error:', error.message);
+    return response.error(res, 'Failed to update pet', 500);
   }
 };
 
-// Delete pet (admin only)
+/**
+ * Delete pet (admin only)
+ */
 export const deletePet = async (req, res) => {
   try {
     const { id } = req.params;
+
+    const pet = await prisma.pet.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!pet) {
+      return response.notFound(res, 'Pet not found');
+    }
+
+    // Delete image file if exists
+    if (pet.image && !pet.image.startsWith('http')) {
+      deleteImageFile(pet.image);
+    }
 
     await prisma.pet.delete({
       where: { id: parseInt(id) },
     });
 
-    res.json({ message: 'Pet deleted successfully' });
+    logger.info(`Pet deleted: ${pet.name} (ID: ${id})`);
+
+    return response.success(res, null, 'Pet deleted successfully');
   } catch (error) {
-    console.error(error);
     if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Pet not found' });
+      return response.notFound(res, 'Pet not found');
     }
-    res.status(500).json({ error: 'Server error' });
+    logger.error('Delete pet error:', error.message);
+    return response.error(res, 'Failed to delete pet', 500);
   }
 };
 

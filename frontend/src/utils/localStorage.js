@@ -14,21 +14,42 @@ export const removeItem = (key) => {
 }
 
 // Auth helpers
-export const setAuth = (user) => {
-  setItem('currentUser', user)
-  setItem('isAuthenticated', true)
+export const setAuth = (token, user) => {
+  try {
+    localStorage.setItem('token', token)
+    localStorage.setItem('user', JSON.stringify(user))
+  } catch (error) {
+    console.error('Error saving auth to localStorage:', error)
+  }
 }
 
 export const getAuth = () => {
-  return {
-    user: getItem('currentUser'),
-    isAuthenticated: getItem('isAuthenticated', false),
+  try {
+    const token = localStorage.getItem('token')
+    const user = localStorage.getItem('user')
+
+    return {
+      token,
+      user: user ? JSON.parse(user) : null,
+      isAuthenticated: !!token && !!user,
+    }
+  } catch (error) {
+    console.error('Error reading auth from localStorage:', error)
+    return {
+      token: null,
+      user: null,
+      isAuthenticated: false,
+    }
   }
 }
 
 export const clearAuth = () => {
-  removeItem('currentUser')
-  removeItem('isAuthenticated')
+  try {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+  } catch (error) {
+    console.error('Error clearing auth from localStorage:', error)
+  }
 }
 
 

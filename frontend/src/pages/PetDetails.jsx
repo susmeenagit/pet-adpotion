@@ -2,20 +2,32 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { getPetById } from '../data/dummyData'
+import { petApi } from '../api/petApi'
+import { getAuth } from '../utils/localStorage'
 
 const PetDetails = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { isAuthenticated } = getAuth()
   const [pet, setPet] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    const petData = getPetById(id)
-    if (petData) {
-      setPet(petData)
+    const fetchPet = async () => {
+      try {
+        setLoading(true)
+        const { pet: petData } = await petApi.getById(id)
+        setPet(petData)
+      } catch (err) {
+        console.error('Failed to fetch pet:', err)
+        setError('Pet not found')
+      } finally {
+        setLoading(false)
+      }
     }
-    setLoading(false)
+
+    fetchPet()
   }, [id])
 
   const getVaccinationBadgeColor = (status) => {
@@ -29,27 +41,15 @@ const PetDetails = () => {
     }
   }
 
-  const getHealthStatusColor = (status) => {
-    switch (status) {
-      case 'Healthy':
-        return 'bg-green-100 text-green-800 border border-green-300'
-      case 'Under Treatment':
-        return 'bg-orange-100 text-orange-800 border border-orange-300'
-      default:
-        return 'bg-gray-100 text-gray-800 border border-gray-300'
-    }
-  }
-
-  const getAdoptionStatusColor = (status) => {
-    switch (status) {
-      case 'Available':
-        return 'bg-blue-100 text-blue-800 border border-blue-300'
-      case 'Pending':
-        return 'bg-purple-100 text-purple-800 border border-purple-300'
-      case 'Adopted':
-        return 'bg-red-100 text-red-800 border border-red-300'
-      default:
-        return 'bg-gray-100 text-gray-800 border border-gray-300'
+  const parseVaccinations = (vaccinationsData) => {
+    try {
+      if (typeof vaccinationsData === 'string') {
+        return JSON.parse(vaccinationsData)
+      }
+      return vaccinationsData || []
+    } catch (err) {
+      console.error('Error parsing vaccinations:', err)
+      return []
     }
   }
 
@@ -65,7 +65,7 @@ const PetDetails = () => {
     )
   }
 
-  if (!pet) {
+  if (error || !pet) {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
         <Navbar />
@@ -87,6 +87,8 @@ const PetDetails = () => {
       </div>
     )
   }
+
+  const vaccinations = parseVaccinations(pet.vaccinations)
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
@@ -113,16 +115,10 @@ const PetDetails = () => {
 
           {/* Pet Details Section */}
           <div className="p-8">
-            {/* Header with Name and Status Badges */}
+            {/* Header with Name */}
             <div className="mb-6">
               <h1 className="text-4xl font-bold text-gray-800 mb-4">{pet.name}</h1>
               <div className="flex flex-wrap gap-3">
-                <span className={`px-4 py-2 rounded-full text-sm font-semibold ${getAdoptionStatusColor(pet.adoptionStatus)}`}>
-                  📋 {pet.adoptionStatus}
-                </span>
-                <span className={`px-4 py-2 rounded-full text-sm font-semibold ${getHealthStatusColor(pet.healthStatus)}`}>
-                  ❤️ {pet.healthStatus}
-                </span>
                 <span className={`px-4 py-2 rounded-full text-sm font-semibold ${getVaccinationBadgeColor(pet.vaccinationStatus)}`}>
                   💉 {pet.vaccinationStatus}
                 </span>
@@ -168,42 +164,69 @@ const PetDetails = () => {
               </div>
             </div>
 
-            {/* Detailed Information */}
+            {/* Additional Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              {/* Health & Vaccination */}
               <div className="border-l-4 border-green-500 pl-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">Health Information</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">More Information</h3>
                 <div className="space-y-3">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Health Status</p>
-                    <p className="text-lg font-semibold text-gray-800">{pet.healthStatus}</p>
+                    <p className="text-sm font-medium text-gray-600">Height</p>
+                    <p className="text-lg font-semibold text-gray-800">{pet.height} {pet.heightUnit}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Vaccination Status</p>
-                    <p className="text-lg font-semibold text-gray-800">{pet.vaccinationStatus}</p>
+                    <p className="text-sm font-medium text-gray-600">Color</p>
+                    <p className="text-lg font-semibold text-gray-800">{pet.color}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Adoption Information */}
               <div className="border-l-4 border-blue-500 pl-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">Adoption Information</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">Vaccination Status</h3>
                 <div className="space-y-3">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Adoption Status</p>
-                    <p className="text-lg font-semibold text-gray-800">{pet.adoptionStatus}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Pet ID</p>
-                    <p className="text-lg font-semibold text-gray-800">#{pet.id}</p>
+                    <p className="text-sm font-medium text-gray-600">Overall Status</p>
+                    <p className={`text-lg font-semibold px-3 py-1 rounded-full w-fit ${getVaccinationBadgeColor(pet.vaccinationStatus)}`}>
+                      {pet.vaccinationStatus}
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* Vaccination Details Table */}
+            {vaccinations && vaccinations.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-2xl font-semibold text-gray-800 mb-4">💉 Vaccination Records</h3>
+                <div className="overflow-x-auto bg-gray-50 rounded-xl">
+                  <table className="w-full">
+                    <thead className="bg-purple-100">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Age</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Vaccine Type</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {vaccinations.map((vaccine, index) => (
+                        <tr key={index} className="hover:bg-gray-100 bg-white">
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">{vaccine.age}</td>
+                          <td className="px-6 py-4 text-sm text-gray-700">{vaccine.vaccineType}</td>
+                          <td className="px-6 py-4 text-sm">
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getVaccinationBadgeColor(vaccine.status)}`}>
+                              {vaccine.status === 'Completed' ? '✅' : vaccine.status === 'Upcoming' ? '🟡' : '⚠️'} {vaccine.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              {pet.adoptionStatus === 'Available' ? (
+              {isAuthenticated ? (
                 <button
                   onClick={() => navigate(`/adoption-application/${pet.id}`)}
                   className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-semibold text-lg shadow-md hover:shadow-lg"
@@ -212,10 +235,10 @@ const PetDetails = () => {
                 </button>
               ) : (
                 <button
-                  disabled
-                  className="flex-1 bg-gray-400 text-white px-8 py-4 rounded-lg font-semibold text-lg cursor-not-allowed opacity-60"
+                  onClick={() => navigate('/login')}
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-semibold text-lg shadow-md hover:shadow-lg"
                 >
-                  ❌ Not Available for Adoption
+                  Login to Adopt
                 </button>
               )}
 
@@ -225,28 +248,6 @@ const PetDetails = () => {
               >
                 🔍 Browse More Pets
               </button>
-            </div>
-
-            {/* Additional Care Tips */}
-            <div className="mt-8 p-6 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">💡 Care Tips</h3>
-              <p className="text-gray-700">
-                Before adopting, please make sure you're ready for the responsibilities. Consider visiting our{' '}
-                <a
-                  href="/petcare-tips"
-                  className="text-purple-600 hover:underline font-semibold"
-                >
-                  Pet Care Tips
-                </a>{' '}
-                and{' '}
-                <a
-                  href="/vaccination-schedule"
-                  className="text-purple-600 hover:underline font-semibold"
-                >
-                  Vaccination Schedule
-                </a>{' '}
-                pages for more information.
-              </p>
             </div>
           </div>
         </div>

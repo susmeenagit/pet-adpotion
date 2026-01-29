@@ -2,33 +2,41 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { getPetById, saveAdoptionRequest, getAuth } from '../data/dummyData'
+import { petApi } from '../api/petApi'
+import { adoptionApi } from '../api/adoptionApi'
+import { getAuth } from '../utils/localStorage'
 
 const AdoptionApplication = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = getAuth()
+  
   const [pet, setPet] = useState(null)
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
+    fullName: user?.name || '',
+    email: user?.email || '',
     phone: '',
     address: '',
     reason: '',
   })
   const [errors, setErrors] = useState({})
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    const petData = getPetById(id)
-    setPet(petData)
-    const { user } = getAuth()
-    if (user) {
-      setFormData((prev) => ({
-        ...prev,
-        fullName: user.name || '',
-        email: user.email || '',
-      }))
+    const fetchPet = async () => {
+      try {
+        const { pet: petData } = await petApi.getById(id)
+        setPet(petData)
+      } catch (err) {
+        console.error('Failed to fetch pet:', err)
+      } finally {
+        setLoading(false)
+      }
     }
+
+    fetchPet()
   }, [id])
 
   const validate = () => {
@@ -39,13 +47,10 @@ const AdoptionApplication = () => {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Invalid email format'
     }
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone is required'
-    }
+    if (!formData.phone.trim()) newErrors.phone = 'Phone is required'
     if (!formData.address.trim()) newErrors.address = 'Address is required'
     if (!formData.reason.trim()) newErrors.reason = 'Reason is required'
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    return { valid: Object.keys(newErrors).length === 0, errors: newErrors }
   }
 
   const handleChange = (e) => {
@@ -61,23 +66,45 @@ const AdoptionApplication = () => {
     }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!validate()) return
+    const validation = validate()
+    if (!validation.valid) {
+      setErrors(validation.errors)
+      return
+    }
 
-    saveAdoptionRequest({
-      petId: parseInt(id),
-      petName: pet.name,
-      ...formData,
-    })
-    setSubmitted(true)
+    setSubmitting(true)
+    try {
+      await adoptionApi.create({
+        petId: parseInt(id),
+        ...formData,
+      })
+      setSubmitted(true)
+    } catch (err) {
+      setErrors({ form: err.response?.data?.message || 'Failed to submit application' })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-2xl font-semibold text-gray-600">Loading...</div>
+        </div>
+        <Footer />
+      </div>
+    )
   }
 
   if (submitted) {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
         <Navbar />
-        <div className="flex-1 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="flex-1 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
           <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
             <div className="text-6xl mb-4">✅</div>
             <h2 className="text-3xl font-bold text-gray-800 mb-4">
@@ -104,7 +131,7 @@ const AdoptionApplication = () => {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <Navbar />
 
-      <div className="flex-1 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="flex-1 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
         <div className="bg-white rounded-2xl shadow-lg p-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
             Adoption Application
@@ -119,12 +146,15 @@ const AdoptionApplication = () => {
             </div>
           )}
 
+          {errors.form && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+              {errors.form}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label
-                htmlFor="fullName"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
+              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
                 Full Name *
               </label>
               <input
@@ -144,10 +174,7 @@ const AdoptionApplication = () => {
             </div>
 
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email *
               </label>
               <input
@@ -167,10 +194,7 @@ const AdoptionApplication = () => {
             </div>
 
             <div>
-              <label
-                htmlFor="phone"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
                 Phone *
               </label>
               <input
@@ -190,10 +214,7 @@ const AdoptionApplication = () => {
             </div>
 
             <div>
-              <label
-                htmlFor="address"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
+              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
                 Address *
               </label>
               <textarea
@@ -213,10 +234,7 @@ const AdoptionApplication = () => {
             </div>
 
             <div>
-              <label
-                htmlFor="reason"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
+              <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-2">
                 Reason for Adoption *
               </label>
               <textarea
@@ -237,9 +255,10 @@ const AdoptionApplication = () => {
 
             <button
               type="submit"
-              className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold text-lg shadow-lg"
+              disabled={submitting}
+              className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Submit Application
+              {submitting ? 'Submitting...' : 'Submit Application'}
             </button>
           </form>
         </div>

@@ -31,19 +31,25 @@ const Navbar = () => {
               to="/browse-pets"
               className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
             >
-               <Link
+              Browse Pets
+            </Link>
+            <Link
               to="/quiz"
               className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
             >
-              Smart Quiz
-            </Link>
-              Browse Pets
+              🎯 Find Match
             </Link>
             <Link
               to="/adoption-process"
               className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
             >
-              Adoption Process
+              How It Works
+            </Link>
+            <Link
+              to="/breed-info"
+              className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
+            >
+              Breed Info
             </Link>
             <Link
               to="/vaccination"
@@ -64,6 +70,14 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 <span className="text-gray-700 text-sm">Hi, {user?.name}</span>
+                {user?.isAdmin && (
+                  <Link
+                    to="/admin-dashboard"
+                    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors font-medium text-sm"
+                  >
+                    Admin
+                  </Link>
+                )}
                 <button
                   onClick={handleLogout}
                   className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium"

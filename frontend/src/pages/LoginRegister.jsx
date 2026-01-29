@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import { setAuth } from '../data/dummyData' // keep if used for global auth state
-import { apiAuth } from '../api/authApi'
+import { authApi } from '../api/authApi'
+import { setAuth } from '../utils/localStorage'
 
 const LoginRegister = () => {
   const navigate = useNavigate()
@@ -29,21 +29,22 @@ const LoginRegister = () => {
     setLoading(true)
 
     try {
-      const { user } = await apiAuth.login({
+      const { user, token, data } = await authApi.login({
         email: formData.email,
         password: formData.password,
       })
 
-      setAuth(user) // optional global state
-      
-      // Check if user is admin and redirect to admin dashboard
-      if (user.isAdmin) {
+      // Save auth to localStorage
+      setAuth(token, user)
+
+      // Redirect based on role
+      if (user?.isAdmin) {
         navigate('/admin-dashboard')
       } else {
         navigate('/')
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed')
+      setError(err.response?.data?.message || 'Login failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -66,16 +67,16 @@ const LoginRegister = () => {
     setLoading(true)
 
     try {
-      const { user } = await apiAuth.register({
+      const { user, token } = await authApi.register({
         name: formData.name,
         email: formData.email,
         password: formData.password,
       })
 
-      setAuth(user)
+      setAuth(token, user)
       navigate('/')
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed')
+      setError(err.response?.data?.message || 'Registration failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -92,7 +93,7 @@ const LoginRegister = () => {
           </h1>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
               {error}
             </div>
           )}
@@ -112,7 +113,7 @@ const LoginRegister = () => {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-600"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
                   placeholder="Enter your full name"
                 />
               </div>
@@ -128,7 +129,7 @@ const LoginRegister = () => {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-600"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
                 placeholder="Enter your email"
               />
             </div>
@@ -144,7 +145,7 @@ const LoginRegister = () => {
                 onChange={handleChange}
                 required
                 minLength={6}
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-600"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
                 placeholder="Enter your password"
               />
             </div>
@@ -152,7 +153,7 @@ const LoginRegister = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-semibold text-lg disabled:opacity-50"
+              className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Please wait...' : isLogin ? 'Login' : 'Register'}
             </button>

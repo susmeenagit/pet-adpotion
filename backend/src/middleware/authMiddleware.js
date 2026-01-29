@@ -1,99 +1,47 @@
-import { verifyToken as verifyJWT } from '../utils/jwt.js';
-import { prisma } from '../lib/prisma.js';
+import jwt from 'jsonwebtoken';
+import { logger } from '../utils/logger.js';
 
-export const requireAuth = async (req, res, next) => {
+export const authMiddleware = (req, res, next) => {
   try {
-    const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
+    const token = req.headers.authorization?.split(' ')[1];
 
     if (!token) {
-      return res.status(401).json({ error: 'Authentication required' });
+      return res.status(401).json({
+        success: false,
+        message: 'No token provided',
+        code: 'NO_TOKEN',
+      });
     }
 
-    const decoded = verifyJWT(token);
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: { id: true, email: true, name: true, isAdmin: true },
-    });
-
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-
-    req.user = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      isAdmin: user.isAdmin,
-    };
-
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_secret_key_here');
+    req.user = decoded;
     next();
   } catch (error) {
-    return res.status(401).json({ error: 'Invalid token' });
+    logger.error('Auth middleware error:', error.message);
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid or expired token',
+      code: 'INVALID_TOKEN',
+    });
   }
 };
 
-export const authenticate = async (req, res, next) => {
+export const isAdmin = (req, res, next) => {
   try {
-    const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({ error: 'Authentication required' });
+    if (!req.user?.isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required',
+        code: 'NOT_ADMIN',
+      });
     }
-
-    const decoded = verifyJWT(token);
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: { id: true, email: true, name: true, isAdmin: true },
-    });
-
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-
-    req.user = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      isAdmin: user.isAdmin,
-    };
-
     next();
   } catch (error) {
-    return res.status(401).json({ error: 'Invalid token' });
-  }
-};
-
-export const isAdmin = async (req, res, next) => {
-  try {
-    const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    const decoded = verifyJWT(token);
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: { id: true, email: true, name: true, isAdmin: true },
+    logger.error('Admin check error:', error.message);
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied',
+      code: 'ACCESS_DENIED',
     });
-
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-
-    if (!user.isAdmin) {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    req.user = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      isAdmin: user.isAdmin,
-    };
-
-    next();
-  } catch (error) {
-    return res.status(401).json({ error: 'Invalid token' });
   }
 };

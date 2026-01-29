@@ -1,90 +1,139 @@
 import { prisma } from '../lib/prisma.js';
+import { response } from '../utils/response.js';
+import { validators } from '../utils/validators.js';
+import { logger } from '../utils/logger.js';
 
-export const createAdoption = async (req, res) => {
+/**
+ * Create adoption application
+ */
+export const createAdoptionApplication = async (req, res) => {
   try {
     const { petId, fullName, email, phone, address, reason } = req.body;
+    const userId = req.user?.userId;
 
-    if (!petId || !fullName || !email || !phone || !address || !reason) {
-      return res.status(400).json({ error: 'All fields are required' });
+    // Validate input
+    const validation = validators.validateAdoptionApplication({ fullName, email, phone, address, reason });
+    if (!validation.valid) {
+      return response.badRequest(res, 'Validation error: ' + Object.values(validation.errors).join(', '));
     }
 
+    // Verify pet exists
+    const pet = await prisma.pet.findUnique({
+      where: { id: parseInt(petId) },
+    });
+
+    if (!pet) {
+      return response.notFound(res, 'Pet not found');
+    }
+
+    // Create adoption record
     const adoption = await prisma.adoption.create({
       data: {
         petId: parseInt(petId),
-        fullName,
-        email,
-        phone,
-        address,
-        reason,
+        userId: userId || null,
+        applicantName: fullName,
+        applicantEmail: email,
+        applicantPhone: phone,
+        applicantAddress: address,
+        applicationReason: reason,
+        status: 'Pending',
       },
     });
 
-    res.status(201).json({
-      message: 'Adoption form submitted successfully',
+    logger.info(`Adoption application created: ${fullName} for pet ${pet.name}`);
+
+    return response.created(res, {
       adoption: {
         id: adoption.id,
-        fullName: adoption.fullName,
-        email: adoption.email,
+        petId: adoption.petId,
+        petName: pet.name,
+        status: adoption.status,
+        createdAt: adoption.createdAt,
       },
-    });
+    }, 'Adoption application submitted successfully');
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
+    logger.error('Create adoption error:', error.message);
+    return response.error(res, 'Failed to submit application', 500);
   }
 };
 
-export const getAdoptions = async (req, res) => {
+/**
+ * Get all adoption applications (admin only)
+ */
+export const getAllAdoptions = async (req, res) => {
   try {
+    const { status, page = 1, limit = 10 } = req.query;
+
+    const where = {};
+    if (status) where.status = status;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
     const adoptions = await prisma.adoption.findMany({
+      where,
       include: {
         pet: {
           select: { name: true, species: true, breed: true },
         },
       },
+      skip,
+      take: parseInt(limit),
       orderBy: { createdAt: 'desc' },
     });
-    res.json({ adoptions });
+
+    const total = await prisma.adoption.count({ where });
+
+    return response.success(res, {
+      adoptions,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit)),
+      },
+    }, 'Adoptions retrieved');
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
+    logger.error('Get adoptions error:', error.message);
+    return response.error(res, 'Failed to retrieve adoptions', 500);
   }
 };
 
-// ============= ADMIN ROUTES =============
-
-// Get adoption by ID (admin only)
+/**
+ * Get adoption by ID (admin only)
+ */
 export const getAdoptionById = async (req, res) => {
   try {
     const { id } = req.params;
+
     const adoption = await prisma.adoption.findUnique({
       where: { id: parseInt(id) },
       include: {
-        pet: {
-          select: { name: true, species: true, breed: true },
-        },
-        verifications: true,
+        pet: true,
       },
     });
 
     if (!adoption) {
-      return res.status(404).json({ error: 'Adoption not found' });
+      return response.notFound(res, 'Adoption not found');
     }
 
-    res.json({ adoption });
+    return response.success(res, { adoption }, 'Adoption retrieved');
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
+    logger.error('Get adoption by ID error:', error.message);
+    return response.error(res, 'Failed to retrieve adoption', 500);
   }
 };
 
-// Update adoption status (admin only)
+/**
+ * Update adoption status (admin only)
+ */
 export const updateAdoptionStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
-    if (!status) {
-      return res.status(400).json({ error: 'Status is required' });
+    // Validate status
+    if (!validators.isValidAdoptionStatus(status)) {
+      return response.badRequest(res, 'Status must be Pending, Approved, or Rejected');
     }
 
     const adoption = await prisma.adoption.update({
@@ -92,22 +141,26 @@ export const updateAdoptionStatus = async (req, res) => {
       data: { status },
       include: {
         pet: {
-          select: { name: true, species: true, breed: true },
+          select: { name: true },
         },
       },
     });
 
-    res.json({ message: 'Adoption status updated', adoption });
+    logger.info(`Adoption status updated: ID ${id}, status: ${status}`);
+
+    return response.success(res, { adoption }, 'Adoption status updated');
   } catch (error) {
-    console.error(error);
     if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Adoption not found' });
+      return response.notFound(res, 'Adoption not found');
     }
-    res.status(500).json({ error: 'Server error' });
+    logger.error('Update adoption status error:', error.message);
+    return response.error(res, 'Failed to update adoption', 500);
   }
 };
 
-// Delete adoption (admin only)
+/**
+ * Delete adoption (admin only)
+ */
 export const deleteAdoption = async (req, res) => {
   try {
     const { id } = req.params;
@@ -116,13 +169,15 @@ export const deleteAdoption = async (req, res) => {
       where: { id: parseInt(id) },
     });
 
-    res.json({ message: 'Adoption deleted successfully' });
+    logger.info(`Adoption deleted: ID ${id}`);
+
+    return response.success(res, null, 'Adoption deleted successfully');
   } catch (error) {
-    console.error(error);
     if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Adoption not found' });
+      return response.notFound(res, 'Adoption not found');
     }
-    res.status(500).json({ error: 'Server error' });
+    logger.error('Delete adoption error:', error.message);
+    return response.error(res, 'Failed to delete adoption', 500);
   }
 };
 

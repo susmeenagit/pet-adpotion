@@ -2,6 +2,22 @@
 
 A complete MERN stack educational pet adoption website inspired by Petfinder, focusing on browsing pets, vaccination schedules, and nutrition & feeding education.
 
+## 🚀 Quick Start
+
+### Admin Credentials
+- **Email**: `admin@petadoption.com`
+- **Password**: `Admin@123`
+
+### Test User Accounts (All passwords: `Password@123`)
+1. **John Smith** - john.smith@email.com
+2. **Sarah Johnson** - sarah.johnson@email.com
+3. **Michael Brown** - michael.brown@email.com
+4. **Emily Davis** - emily.davis@email.com
+5. **David Wilson** - david.wilson@email.com
+6. **Jessica Martinez** - jessica.martinez@email.com
+7. **Robert Garcia** - robert.garcia@email.com
+8. **Lisa Anderson** - lisa.anderson@email.com
+
 ## Tech Stack
 
 - **Frontend**: React.js (Vite), React Router, Axios, Tailwind CSS

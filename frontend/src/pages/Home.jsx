@@ -3,15 +3,28 @@ import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import PetCard from '../components/PetCard'
-import { initializeData, getPets } from '../data/dummyData'
+import { petApi } from '../api/petApi'
 
 const Home = () => {
   const [featuredPets, setFeaturedPets] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    initializeData()
-    const pets = getPets()
-    setFeaturedPets(pets.slice(0, 3))
+    const fetchFeaturedPets = async () => {
+      try {
+        setLoading(true)
+        const { pets } = await petApi.getFeatured()
+        setFeaturedPets(pets || [])
+      } catch (err) {
+        console.error('Failed to fetch featured pets:', err)
+        setError('Failed to load featured pets')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFeaturedPets()
   }, [])
 
   return (
@@ -70,19 +83,36 @@ const Home = () => {
           <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">
             Featured Pets
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredPets.map((pet) => (
-              <PetCard key={pet.id} pet={pet} />
-            ))}
-          </div>
-          <div className="text-center mt-8">
-            <Link
-              to="/browse-pets"
-              className="inline-block bg-purple-600 text-white px-8 py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold"
-            >
-              View All Pets
-            </Link>
-          </div>
+          
+          {loading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600 text-lg">Loading featured pets...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <p className="text-red-600 text-lg">{error}</p>
+            </div>
+          ) : featuredPets.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600 text-lg">No featured pets available</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                {featuredPets.map((pet) => (
+                  <PetCard key={pet.id} pet={pet} />
+                ))}
+              </div>
+              <div className="text-center mt-8">
+                <Link
+                  to="/browse-pets"
+                  className="inline-block bg-purple-600 text-white px-8 py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold"
+                >
+                  View All Pets
+                </Link>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

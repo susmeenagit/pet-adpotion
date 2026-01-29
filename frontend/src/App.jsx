@@ -1,23 +1,19 @@
-import { useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { initializeData } from './data/dummyData'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Home from './pages/Home'
 import BrowsePets from './pages/BrowsePets'
-import SmartQuiz from './pages/SmartQuiz'
 import PetDetails from './pages/PetDetails'
 import AdoptionApplication from './pages/AdoptionApplication'
-import AdoptionProcess from './pages/AdoptionProcess'
-import VaccinationSchedule from './pages/VaccinationSchedule'
-import PetCareTips from './pages/PetCareTips'
 import LoginRegister from './pages/LoginRegister'
+import VaccinationSchedule from './pages/Vaccinationschedule'
+import PetCareTips from './pages/PetcareTips'
+import BreedInformation from './pages/Breedinformation'
+import AdoptionProcess from './pages/Adoptionprocess'
 import AdminDashboard from './pages/AdminDashboard'
+import Quiz from './pages/Quiz'
+import QuizResults from './pages/QuizResults'
 
 
 function App() {
-  useEffect(() => {
-    initializeData()
-  }, [])
-
   return (
     <Router>
       <Routes>
@@ -26,12 +22,14 @@ function App() {
         <Route path="/pet-details/:id" element={<PetDetails />} />
         <Route path="/adoption-application/:id" element={<AdoptionApplication />} />
         <Route path="/adoption-process" element={<AdoptionProcess />} />
+        <Route path="/login" element={<LoginRegister />} />
         <Route path="/vaccination" element={<VaccinationSchedule />} />
         <Route path="/care-tips" element={<PetCareTips />} />
-        <Route path="/login" element={<LoginRegister />} />
+        <Route path="/breed-info" element={<BreedInformation />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
-       <Route path="/quiz" element={<SmartQuiz />} />
-
+        <Route path="/quiz" element={<Quiz />} />
+        <Route path="/quiz-results" element={<QuizResults />} />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
   )

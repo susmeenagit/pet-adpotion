@@ -1,98 +1,178 @@
-import { prisma } from '../lib/prisma.js';
-import { signToken } from '../utils/jwt.js';
+import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
+import { prisma } from '../lib/prisma.js';
+import { response } from '../utils/response.js';
+import { validators } from '../utils/validators.js';
+import { logger } from '../utils/logger.js';
 
-const cookieOptions = () => ({
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax',
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-});
+// Generate JWT token
+const generateToken = (userId, email, isAdmin) => {
+  return jwt.sign(
+    { userId, email, isAdmin },
+    process.env.JWT_SECRET || 'your_secret_key_here',
+    { expiresIn: '7d' }
+  );
+};
 
+/**
+ * Register a new user
+ */
 export const register = async (req, res) => {
   try {
     const { email, password, name } = req.body;
-    if (!email || !password || !name) {
-      return res.status(400).json({ error: 'Name, email and password are required' });
+
+    // Validate input
+    const validation = validators.validateRegistration({ email, password, name });
+    if (!validation.valid) {
+      return response.badRequest(res, 'Validation error: ' + Object.values(validation.errors).join(', '));
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) return res.status(409).json({ error: 'User already exists' });
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return response.conflict(res, 'Email already registered');
+    }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Create user
     const user = await prisma.user.create({
-      data: { email, password: hashedPassword, name },
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+        isAdmin: false,
+      },
     });
 
-    const token = signToken({ id: user.id, email: user.email });
+    // Generate token
+    const token = generateToken(user.id, user.email, user.isAdmin);
 
-    res.cookie('token', token, cookieOptions());
+    logger.info(`User registered: ${email}`);
 
-    return res.status(201).json({
+    return response.created(res, {
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
         isAdmin: user.isAdmin,
-        createdAt: user.createdAt,
       },
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Server error' });
+      token,
+    }, 'User registered successfully');
+  } catch (error) {
+    logger.error('Registration error:', error.message);
+    return response.error(res, 'Registration failed', 500);
   }
 };
 
+/**
+ * Login user
+ */
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+
+    // Validate input
+    if (!validators.isRequired(email) || !validators.isRequired(password)) {
+      return response.badRequest(res, 'Email and password are required');
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!validators.isValidEmail(email)) {
+      return response.badRequest(res, 'Invalid email format');
+    }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
 
-    const token = signToken({ id: user.id, email: user.email });
-    res.cookie('token', token, cookieOptions());
+    if (!user) {
+      return response.unauthorized(res, 'Invalid email or password');
+    }
 
-    return res.json({
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return response.unauthorized(res, 'Invalid email or password');
+    }
+
+    // Generate token
+    const token = generateToken(user.id, user.email, user.isAdmin);
+
+    logger.info(`User logged in: ${email}`);
+
+    return response.success(res, {
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
         isAdmin: user.isAdmin,
-        createdAt: user.createdAt,
       },
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Server error' });
+      token,
+    }, 'Login successful');
+  } catch (error) {
+    logger.error('Login error:', error.message);
+    return response.error(res, 'Login failed', 500);
   }
 };
 
-export const logout = (req, res) => {
-  res.clearCookie('token', {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-  });
-  return res.json({ ok: true });
+/**
+ * Get current user info
+ */
+export const me = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return response.unauthorized(res, 'Not authenticated');
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isAdmin: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      return response.notFound(res, 'User not found');
+    }
+
+    return response.success(res, { user }, 'User retrieved');
+  } catch (error) {
+    logger.error('Get user error:', error.message);
+    return response.error(res, 'Failed to retrieve user', 500);
+  }
 };
 
-export const me = (req, res) => {
-  const user = req.user;
-  return res.json({ user });
+/**
+ * Logout user (frontend clears token)
+ */
+export const logout = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    logger.info(`User logged out: ${userId}`);
+    return response.success(res, null, 'Logged out successfully');
+  } catch (error) {
+    logger.error('Logout error:', error.message);
+    return response.error(res, 'Logout failed', 500);
+  }
 };
 
-// ============= ADMIN ROUTES =============
+// ============= ADMIN ENDPOINTS =============
 
-// Get all users (admin only)
+/**
+ * Get all users (admin only)
+ */
 export const getAllUsers = async (req, res) => {
   try {
     const users = await prisma.user.findMany({
@@ -102,19 +182,20 @@ export const getAllUsers = async (req, res) => {
         name: true,
         isAdmin: true,
         createdAt: true,
-        updatedAt: true,
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    res.json({ users });
+    return response.success(res, { users }, 'Users retrieved');
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
+    logger.error('Get users error:', error.message);
+    return response.error(res, 'Failed to retrieve users', 500);
   }
 };
 
-// Get single user by ID (admin only)
+/**
+ * Get user by ID (admin only)
+ */
 export const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -127,30 +208,31 @@ export const getUserById = async (req, res) => {
         name: true,
         isAdmin: true,
         createdAt: true,
-        updatedAt: true,
-        quizResponses: true,
       },
     });
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return response.notFound(res, 'User not found');
     }
 
-    res.json({ user });
+    return response.success(res, { user }, 'User retrieved');
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
+    logger.error('Get user by ID error:', error.message);
+    return response.error(res, 'Failed to retrieve user', 500);
   }
 };
 
-// Update user role (admin only)
+/**
+ * Update user role (admin only)
+ */
 export const updateUserRole = async (req, res) => {
   try {
     const { id } = req.params;
     const { isAdmin } = req.body;
 
-    if (typeof isAdmin !== 'boolean') {
-      return res.status(400).json({ error: 'isAdmin must be a boolean' });
+    // Prevent self-demotion
+    if (req.user?.userId === parseInt(id) && !isAdmin) {
+      return response.badRequest(res, 'Cannot remove your own admin status');
     }
 
     const user = await prisma.user.update({
@@ -161,68 +243,74 @@ export const updateUserRole = async (req, res) => {
         email: true,
         name: true,
         isAdmin: true,
-        createdAt: true,
-        updatedAt: true,
       },
     });
 
-    res.json({ message: 'User role updated successfully', user });
+    logger.info(`User role updated: ${user.email}, isAdmin: ${isAdmin}`);
+
+    return response.success(res, { user }, 'User role updated');
   } catch (error) {
-    console.error(error);
     if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'User not found' });
+      return response.notFound(res, 'User not found');
     }
-    res.status(500).json({ error: 'Server error' });
+    logger.error('Update user role error:', error.message);
+    return response.error(res, 'Failed to update user', 500);
   }
 };
 
-// Delete user (admin only)
+/**
+ * Delete user (admin only)
+ */
 export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const currentUserId = req.user.id;
 
-    // Prevent admin from deleting themselves
-    if (parseInt(id) === currentUserId) {
-      return res.status(400).json({ error: 'Cannot delete your own account' });
+    // Prevent self-deletion
+    if (req.user?.userId === parseInt(id)) {
+      return response.badRequest(res, 'Cannot delete your own account');
     }
 
     await prisma.user.delete({
       where: { id: parseInt(id) },
     });
 
-    res.json({ message: 'User deleted successfully' });
+    logger.info(`User deleted: ${id}`);
+
+    return response.success(res, null, 'User deleted successfully');
   } catch (error) {
-    console.error(error);
     if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'User not found' });
+      return response.notFound(res, 'User not found');
     }
-    res.status(500).json({ error: 'Server error' });
+    logger.error('Delete user error:', error.message);
+    return response.error(res, 'Failed to delete user', 500);
   }
 };
 
-// Get system statistics (admin only)
+/**
+ * Get system statistics (admin only)
+ */
 export const getSystemStats = async (req, res) => {
   try {
     const totalUsers = await prisma.user.count();
     const totalAdmins = await prisma.user.count({ where: { isAdmin: true } });
     const totalPets = await prisma.pet.count();
     const totalAdoptions = await prisma.adoption.count();
-    const totalQuizzes = await prisma.quiz.count();
-    const totalQuizResponses = await prisma.quizResponse.count();
+    const adoptionsPending = await prisma.adoption.count({ where: { status: 'Pending' } });
+    const adoptionsApproved = await prisma.adoption.count({ where: { status: 'Approved' } });
 
-    res.json({
+    return response.success(res, {
       stats: {
         totalUsers,
         totalAdmins,
         totalPets,
         totalAdoptions,
-        totalQuizzes,
-        totalQuizResponses,
+        adoptionsPending,
+        adoptionsApproved,
+        timestamp: new Date(),
       },
-    });
+    }, 'Statistics retrieved');
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
+    logger.error('Get stats error:', error.message);
+    return response.error(res, 'Failed to retrieve statistics', 500);
   }
 };
