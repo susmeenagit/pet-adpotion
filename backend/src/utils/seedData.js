@@ -174,7 +174,7 @@ export const seedPets = async () => {
         heightUnit: 'cm',
         color: 'Black',
         description: 'Loyal and playful Labrador. Excellent with families and children.',
-        image: 'https://images.unsplash.com/photo-1534361960057-19889dbdf1bb?w=400&h=300&fit=crop',
+        image: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=400&h=300&fit=crop',
         vaccinationStatus: 'Completed',
         vaccinations: JSON.stringify([
           { age: '6-8 weeks', vaccineType: 'DHPP', status: 'Completed' },
@@ -210,7 +210,7 @@ export const seedPets = async () => {
         heightUnit: 'cm',
         color: 'White',
         description: 'Fluffy Angora rabbit. Gentle and calm temperament.',
-        image: 'https://images.unsplash.com/photo-1459262838948-3e416b11c5b6?w=400&h=300&fit=crop',
+        image: 'https://images.unsplash.com/photo-1518796745738-41048802f99a?w=400&h=300&fit=crop',
         vaccinationStatus: 'Completed',
         vaccinations: JSON.stringify([
           { age: '5-7 weeks', vaccineType: 'Myxomatosis', status: 'Completed' },
@@ -282,7 +282,7 @@ export const seedPets = async () => {
         heightUnit: 'cm',
         color: 'Black & Tan',
         description: 'Strong and intelligent German Shepherd. Trained for obedience.',
-        image: 'https://images.unsplash.com/photo-1568393691622-d4f6d6f7f8e8?w=400&h=300&fit=crop',
+        image: 'https://images.unsplash.com/photo-1589941013453-ec89f33b5e95?w=400&h=300&fit=crop',
         vaccinationStatus: 'Completed',
         vaccinations: JSON.stringify([
           { age: '6-8 weeks', vaccineType: 'DHPP', status: 'Completed' },
