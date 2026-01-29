@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminHeader from '../components/admin/AdminHeader'
 import StatsCard from '../components/admin/StatsCard'
@@ -15,6 +15,21 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState(null)
   const [statsLoading, setStatsLoading] = useState(true)
   const [error, setError] = useState('')
+  const [statsFetched, setStatsFetched] = useState(false)
+
+  const fetchStats = useCallback(async () => {
+    try {
+      setStatsLoading(true)
+      const { stats: statsData } = await adminApi.stats.getStats()
+      setStats(statsData)
+      setStatsFetched(true)
+    } catch (err) {
+      console.error('Failed to fetch stats:', err)
+      setError('Failed to load statistics')
+    } finally {
+      setStatsLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     // Check if user is admin
@@ -23,22 +38,11 @@ const AdminDashboard = () => {
       return
     }
 
-    // Fetch stats
-    fetchStats()
-  }, [user, navigate])
-
-  const fetchStats = async () => {
-    try {
-      setStatsLoading(true)
-      const { stats: statsData } = await adminApi.stats.getStats()
-      setStats(statsData)
-    } catch (err) {
-      console.error('Failed to fetch stats:', err)
-      setError('Failed to load statistics')
-    } finally {
-      setStatsLoading(false)
+    // Fetch stats only once
+    if (!statsFetched) {
+      fetchStats()
     }
-  }
+  }, [user, navigate, fetchStats, statsFetched])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
