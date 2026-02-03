@@ -2,6 +2,7 @@ import { prisma } from '../lib/prisma.js';
 import { response } from '../utils/response.js';
 import { validators } from '../utils/validators.js';
 import { logger } from '../utils/logger.js';
+import { getImageUrl } from '../middleware/uploadMiddleware.js';
 
 /**
  * Create adoption application
@@ -29,13 +30,12 @@ export const createAdoptionApplication = async (req, res) => {
     // Create adoption record
     const adoption = await prisma.adoption.create({
       data: {
-        petId: parseInt(petId),
-        userId: userId || null,
-        applicantName: fullName,
-        applicantEmail: email,
-        applicantPhone: phone,
-        applicantAddress: address,
-        applicationReason: reason,
+        petId: Number(petId),
+        fullName,
+        email,
+        phone,
+        address,
+        reason,
         status: 'Pending',
       },
     });
@@ -52,8 +52,8 @@ export const createAdoptionApplication = async (req, res) => {
       },
     }, 'Adoption application submitted successfully');
   } catch (error) {
-    logger.error('Create adoption error:', error.message);
-    return response.error(res, 'Failed to submit application', 500);
+    console.error('Create adoption error:', error);
+    return response.error(res, error.message, 500);
   }
 };
 
@@ -180,6 +180,55 @@ export const deleteAdoption = async (req, res) => {
     return response.error(res, 'Failed to delete adoption', 500);
   }
 };
+
+/**
+ * Get user's own adoption applications
+ */
+export const getMyAdoptions = async (req, res) => {
+  try {
+    const user = req.user;
+    
+    if (!user || !user.email) {
+      return response.unauthorized(res, 'User email not found');
+    }
+
+    const adoptions = await prisma.adoption.findMany({
+      where: {
+        email: user.email,
+      },
+      include: {
+        pet: {
+          select: {
+            id: true,
+            name: true,
+            species: true,
+            breed: true,
+            age: true,
+            ageUnit: true,
+            image: true,
+            description: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Format image URLs for pets
+    const adoptionsWithFormattedImages = adoptions.map(adoption => ({
+      ...adoption,
+      pet: adoption.pet ? {
+        ...adoption.pet,
+        image: adoption.pet.image ? getImageUrl(adoption.pet.image) : null,
+      } : null,
+    }));
+
+    return response.success(res, { adoptions: adoptionsWithFormattedImages }, 'User adoptions retrieved');
+  } catch (error) {
+    logger.error('Get my adoptions error:', error.message);
+    return response.error(res, 'Failed to retrieve adoptions', 500);
+  }
+};
+
 
 
 

@@ -6,130 +6,132 @@ import { validators } from '../utils/validators.js';
 import { logger } from '../utils/logger.js';
 
 // Generate JWT token
-const generateToken = (userId, email, isAdmin) => {
+const generateToken = (user) => {
+  console.log("Generating token for user:", user);
   return jwt.sign(
-    { userId, email, isAdmin },
+    {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    },
     process.env.JWT_SECRET || 'your_secret_key_here',
     { expiresIn: '7d' }
-  );
-};
+  )
+}
 
 /**
  * Register a new user
  */
 export const register = async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name } = req.body
 
-    // Validate input
-    const validation = validators.validateRegistration({ email, password, name });
+    const validation = validators.validateRegistration({ email, password, name })
     if (!validation.valid) {
-      return response.badRequest(res, 'Validation error: ' + Object.values(validation.errors).join(', '));
+      return response.badRequest(
+        res,
+        'Validation error: ' + Object.values(validation.errors).join(', ')
+      )
     }
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
+    const existingUser = await prisma.user.findUnique({ where: { email } })
     if (existingUser) {
-      return response.conflict(res, 'Email already registered');
+      return response.conflict(res, 'Email already registered')
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10)
 
-    // Create user
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name,
-        isAdmin: false,
+        role: 'USER',        // default role
+        isAdmin: false,      // optional legacy field
       },
-    });
+    })
 
-    // Generate token
-    const token = generateToken(user.id, user.email, user.isAdmin);
+    const token = generateToken(user)
 
-    logger.info(`User registered: ${email}`);
+    logger.info(`User registered: ${email}`)
 
-    return response.created(res, {
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        isAdmin: user.isAdmin,
+    return response.created(
+      res,
+      {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
+        token,
       },
-      token,
-    }, 'User registered successfully');
+      'User registered successfully'
+    )
   } catch (error) {
-    logger.error('Registration error:', error.message);
-    return response.error(res, 'Registration failed', 500);
+    logger.error('Registration error:', error.message)
+    return response.error(res, 'Registration failed', 500)
   }
-};
+}
 
 /**
  * Login user
  */
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body
 
-    // Validate input
     if (!validators.isRequired(email) || !validators.isRequired(password)) {
-      return response.badRequest(res, 'Email and password are required');
+      return response.badRequest(res, 'Email and password are required')
     }
 
     if (!validators.isValidEmail(email)) {
-      return response.badRequest(res, 'Invalid email format');
+      return response.badRequest(res, 'Invalid email format')
     }
 
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
-
+    const user = await prisma.user.findUnique({ where: { email } })
     if (!user) {
-      return response.unauthorized(res, 'Invalid email or password');
+      return response.unauthorized(res, 'Invalid email or password')
     }
 
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    console.log("User", user);
 
+    const isPasswordValid = await bcrypt.compare(password, user.password)
     if (!isPasswordValid) {
-      return response.unauthorized(res, 'Invalid email or password');
+      return response.unauthorized(res, 'Invalid email or password')
     }
 
-    // Generate token
-    const token = generateToken(user.id, user.email, user.isAdmin);
+    const token = generateToken(user)
 
-    logger.info(`User logged in: ${email}`);
+    logger.info(`User logged in: ${email}`)
 
-    return response.success(res, {
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        isAdmin: user.isAdmin,
+    return response.success(
+      res,
+      {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
+        token,
       },
-      token,
-    }, 'Login successful');
+      'Login successful'
+    )
   } catch (error) {
-    logger.error('Login error:', error.message);
-    return response.error(res, 'Login failed', 500);
+    logger.error('Login error:', error.message)
+    return response.error(res, 'Login failed', 500)
   }
-};
+}
 
 /**
  * Get current user info
  */
 export const me = async (req, res) => {
   try {
-    const userId = req.user?.userId;
-
+    const userId = req.user?.userId
     if (!userId) {
-      return response.unauthorized(res, 'Not authenticated');
+      return response.unauthorized(res, 'Not authenticated')
     }
 
     const user = await prisma.user.findUnique({
@@ -138,21 +140,21 @@ export const me = async (req, res) => {
         id: true,
         email: true,
         name: true,
-        isAdmin: true,
+        role: true,
         createdAt: true,
       },
-    });
+    })
 
     if (!user) {
-      return response.notFound(res, 'User not found');
+      return response.notFound(res, 'User not found')
     }
 
-    return response.success(res, { user }, 'User retrieved');
+    return response.success(res, { user }, 'User retrieved')
   } catch (error) {
-    logger.error('Get user error:', error.message);
-    return response.error(res, 'Failed to retrieve user', 500);
+    logger.error('Get user error:', error.message)
+    return response.error(res, 'Failed to retrieve user', 500)
   }
-};
+}
 
 /**
  * Logout user (frontend clears token)
