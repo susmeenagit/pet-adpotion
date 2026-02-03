@@ -23,26 +23,34 @@ const LoginRegister = () => {
     setError('')
   }
 
+  const redirectByRole = (role) => {
+    switch (role) {
+      case 'ADMIN':
+        return '/admin-dashboard'
+      case 'OWNER':
+        return '/owner/dashboard'
+      case 'USER':
+      default:
+        return '/user/dashboard'
+    }
+  }
+
   const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
     try {
-      const { user, token, data } = await authApi.login({
+      const { user, token } = await authApi.login({
         email: formData.email,
         password: formData.password,
       })
 
-      // Save auth to localStorage
+      // Save auth
       setAuth(token, user)
 
       // Redirect based on role
-      if (user?.isAdmin) {
-        navigate('/admin-dashboard')
-      } else {
-        navigate('/')
-      }
+      navigate(redirectByRole(user.role))
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please try again.')
     } finally {
@@ -74,7 +82,7 @@ const LoginRegister = () => {
       })
 
       setAuth(token, user)
-      navigate('/')
+      navigate(redirectByRole(user.role))
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.')
     } finally {
@@ -181,5 +189,3 @@ const LoginRegister = () => {
 }
 
 export default LoginRegister
-
-

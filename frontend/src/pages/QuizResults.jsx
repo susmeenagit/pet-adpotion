@@ -41,7 +41,7 @@ const QuizResults = () => {
       if (pet.species === 'Rabbit') score += 10
       reasons.push('Good for first-time owners')
     } else if (userAnswers.experience === 'expert') {
-      score += 10 // All pets suitable for experts
+      score += 10
     }
 
     // Kids/Elderly at home
@@ -71,7 +71,6 @@ const QuizResults = () => {
       try {
         setLoading(true)
 
-        // Get answers from session storage
         const storedAnswers = sessionStorage.getItem('quizAnswers')
         if (!storedAnswers) {
           navigate('/quiz')
@@ -81,16 +80,13 @@ const QuizResults = () => {
         const userAnswers = JSON.parse(storedAnswers)
         setAnswers(userAnswers)
 
-        // Fetch all pets
         const { pets } = await petApi.getAll(1, 100)
 
-        // Score and sort
         const scored = pets.map((pet) => {
           const { score, reasons } = calculateScore(pet, userAnswers)
           return { ...pet, matchScore: score, matchReasons: reasons }
         })
 
-        // Get top matches
         const topMatches = scored
           .sort((a, b) => b.matchScore - a.matchScore)
           .slice(0, 6)
@@ -110,11 +106,11 @@ const QuizResults = () => {
 
   const getAnswerLabel = (key, value) => {
     const labels = {
-      homeType: { apartment: '🏢 Apartment', house: '🏠 House', farm: '🚜 Farm' },
-      timeAvailable: { low: '⏰ Less than 1 hour', medium: '⏱️ 1-3 hours', high: '⏲️ More than 3 hours' },
-      experience: { beginner: '🌱 Beginner', intermediate: '🌿 Intermediate', expert: '🌳 Expert' },
-      kidsElderly: { yes: '✅ Yes', no: '❌ No' },
-      activityLevel: { low: '🛋️ Low', medium: '🚴 Medium', high: '🏃 High' },
+      homeType: { apartment: 'Apartment', house: 'House', farm: 'Farm' },
+      timeAvailable: { low: 'Less than 1 hour', medium: '1-3 hours', high: 'More than 3 hours' },
+      experience: { beginner: 'Beginner', intermediate: 'Intermediate', expert: 'Expert' },
+      kidsElderly: { yes: 'Yes', no: 'No' },
+      activityLevel: { low: 'Low', medium: 'Medium', high: 'High' },
     }
     return labels[key]?.[value] || value
   }
@@ -125,8 +121,9 @@ const QuizResults = () => {
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="text-6xl mb-4">🔄</div>
-            <p className="text-2xl font-semibold text-gray-600">Finding your perfect matches...</p>
+            <p className="text-2xl font-semibold text-gray-600">
+              Finding your perfect matches...
+            </p>
           </div>
         </div>
         <Footer />
@@ -139,67 +136,75 @@ const QuizResults = () => {
       <Navbar />
 
       <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
-        {/* Header */}
         <div className="mb-12 text-center">
           <h1 className="text-4xl font-bold text-gray-800 mb-3">
-            🎉 Your Perfect Pet Matches
+            Your Perfect Pet Matches
           </h1>
           <p className="text-gray-600 text-lg">
             Based on your preferences, here are our top recommendations
           </p>
         </div>
 
-        {/* Your Profile */}
         {answers && (
           <div className="bg-white rounded-lg shadow-lg p-6 mb-12">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Your Profile</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-4">
+              Your Profile
+            </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               <div className="text-center p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-gray-600">Home</p>
-                <p className="font-semibold text-gray-800">{getAnswerLabel('homeType', answers.homeType)}</p>
+                <p className="font-semibold text-gray-800">
+                  {getAnswerLabel('homeType', answers.homeType)}
+                </p>
               </div>
               <div className="text-center p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-gray-600">Time</p>
-                <p className="font-semibold text-gray-800">{getAnswerLabel('timeAvailable', answers.timeAvailable)}</p>
+                <p className="font-semibold text-gray-800">
+                  {getAnswerLabel('timeAvailable', answers.timeAvailable)}
+                </p>
               </div>
               <div className="text-center p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-gray-600">Experience</p>
-                <p className="font-semibold text-gray-800">{getAnswerLabel('experience', answers.experience)}</p>
+                <p className="font-semibold text-gray-800">
+                  {getAnswerLabel('experience', answers.experience)}
+                </p>
               </div>
               <div className="text-center p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-gray-600">Family</p>
-                <p className="font-semibold text-gray-800">{getAnswerLabel('kidsElderly', answers.kidsElderly)}</p>
+                <p className="font-semibold text-gray-800">
+                  {getAnswerLabel('kidsElderly', answers.kidsElderly)}
+                </p>
               </div>
               <div className="text-center p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-gray-600">Activity</p>
-                <p className="font-semibold text-gray-800">{getAnswerLabel('activityLevel', answers.activityLevel)}</p>
+                <p className="font-semibold text-gray-800">
+                  {getAnswerLabel('activityLevel', answers.activityLevel)}
+                </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Error Message */}
         {error && (
           <div className="mb-8 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
             {error}
           </div>
         )}
 
-        {/* Recommendations */}
         {recommendations.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
               {recommendations.map((pet) => (
                 <div key={pet.id} className="relative">
                   <PetCard pet={pet} />
-                  {/* Match Score Badge */}
                   <div className="absolute top-4 right-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-full font-bold shadow-lg">
                     {pet.matchScore}% Match
                   </div>
-                  {/* Match Reasons */}
-                  {pet.matchReasons && pet.matchReasons.length > 0 && (
+                  {pet.matchReasons?.length > 0 && (
                     <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-sm font-semibold text-green-800 mb-1">Why we recommend:</p>
+                      <p className="text-sm font-semibold text-green-800 mb-1">
+                        Why we recommend:
+                      </p>
                       <ul className="text-xs text-green-700 space-y-1">
                         {pet.matchReasons.map((reason, idx) => (
                           <li key={idx}>✓ {reason}</li>
@@ -211,25 +216,26 @@ const QuizResults = () => {
               ))}
             </div>
 
-            {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={() => navigate('/browse-pets')}
                 className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 font-semibold text-lg shadow-md"
               >
-                🐾 Browse All Pets
+                Browse All Pets
               </button>
               <button
                 onClick={() => navigate('/quiz')}
                 className="px-8 py-3 border-2 border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 font-semibold text-lg"
               >
-                🔄 Take Quiz Again
+                Take Quiz Again
               </button>
             </div>
           </>
         ) : (
           <div className="text-center py-12">
-            <p className="text-2xl text-gray-600 mb-6">No matches found with current preferences</p>
+            <p className="text-2xl text-gray-600 mb-6">
+              No matches found with current preferences
+            </p>
             <button
               onClick={() => navigate('/quiz')}
               className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold"

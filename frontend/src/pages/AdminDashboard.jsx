@@ -61,28 +61,28 @@ const AdminDashboard = () => {
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <StatsCard
-                icon="👥"
+                icon=""
                 label="Total Users"
                 value={stats?.totalUsers || 0}
                 color="purple"
                 loading={statsLoading}
               />
               <StatsCard
-                icon="🐕"
+                icon=""
                 label="Total Pets"
                 value={stats?.totalPets || 0}
                 color="blue"
                 loading={statsLoading}
               />
               <StatsCard
-                icon="📋"
+                icon=""
                 label="Total Adoptions"
                 value={stats?.totalAdoptions || 0}
                 color="green"
                 loading={statsLoading}
               />
               <StatsCard
-                icon="⏳"
+                icon=""
                 label="Pending"
                 value={stats?.adoptionsPending || 0}
                 color="orange"

@@ -3,6 +3,7 @@ import axiosInstance from '../config/axios';
 export const adoptionApi = {
   // Create adoption application
   create: async (adoptionData) => {
+    console.log('Creating adoption application with data:', adoptionData);
     const response = await axiosInstance.post('/adoption', adoptionData);
     return response.data;
   },

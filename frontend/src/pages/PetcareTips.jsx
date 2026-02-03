@@ -170,10 +170,9 @@ const PetCareTips = () => {
 
       <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="text-4xl font-bold text-gray-800 mb-8 text-center">
-          🐾 Pet Care Tips & Guides
+          Pet Care Tips & Guides
         </h1>
 
-        {/* Species Selector */}
         <div className="flex justify-center mb-8">
           <div className="bg-white rounded-xl shadow-md p-2 inline-flex space-x-2">
             {['Dog', 'Cat', 'Rabbit'].map((species) => (
@@ -186,22 +185,21 @@ const PetCareTips = () => {
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                {species === 'Dog' ? '🐕' : species === 'Cat' ? '🐱' : '🐰'} {species}
+                {species}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Tips Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          <TipCard title="Nutrition" icon="🍽️" items={tips.nutrition} />
-          <TipCard title="Grooming" icon="✨" items={tips.grooming} />
-          <TipCard title="Exercise" icon="🏃" items={tips.exercise} />
-          <TipCard title="Health" icon="❤️" items={tips.health} />
-          <TipCard title="Training" icon="🎓" items={tips.training} />
+          <TipCard title="Nutrition" icon="" items={tips.nutrition} />
+          <TipCard title="Grooming" icon="" items={tips.grooming} />
+          <TipCard title="Exercise" icon="" items={tips.exercise} />
+          <TipCard title="Health" icon="" items={tips.health} />
+          <TipCard title="Training" icon="" items={tips.training} />
+
           <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl shadow-md p-6">
             <div className="flex items-center space-x-3 mb-4">
-              <span className="text-4xl">💡</span>
               <h3 className="text-2xl font-semibold text-gray-800">Pro Tips</h3>
             </div>
             <ul className="space-y-2">
@@ -229,7 +227,6 @@ const PetCareTips = () => {
           </div>
         </div>
 
-        {/* Additional Resources */}
         <div className="bg-white rounded-xl shadow-lg p-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Resources</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

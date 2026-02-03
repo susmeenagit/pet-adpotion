@@ -22,27 +22,27 @@ const Quiz = () => {
       id: 'homeType',
       question: 'What type of home do you have?',
       options: [
-        { value: 'apartment', label: '🏢 Apartment' },
-        { value: 'house', label: '🏠 House' },
-        { value: 'farm', label: '🚜 Farm' },
+        { value: 'apartment', label: ' Apartment' },
+        { value: 'house', label: 'House' },
+        { value: 'farm', label: 'Farm' },
       ],
     },
     {
       id: 'timeAvailable',
       question: 'How much time do you have for a pet daily?',
       options: [
-        { value: 'low', label: '⏰ Less than 1 hour' },
-        { value: 'medium', label: '⏱️ 1-3 hours' },
-        { value: 'high', label: '⏲️ More than 3 hours' },
+        { value: 'low', label: 'Less than 1 hour' },
+        { value: 'medium', label: '1-3 hours' },
+        { value: 'high', label: 'More than 3 hours' },
       ],
     },
     {
       id: 'experience',
       question: 'What is your pet ownership experience?',
       options: [
-        { value: 'beginner', label: '🌱 Beginner (first pet)' },
-        { value: 'intermediate', label: '🌿 Intermediate (owned pets)' },
-        { value: 'expert', label: '🌳 Expert (multiple pets)' },
+        { value: 'beginner', label: 'Beginner (first pet)' },
+        { value: 'intermediate', label: 'Intermediate (owned pets)' },
+        { value: 'expert', label: 'Expert (multiple pets)' },
       ],
     },
     {
@@ -57,9 +57,9 @@ const Quiz = () => {
       id: 'activityLevel',
       question: 'What is your activity level?',
       options: [
-        { value: 'low', label: '🛋️ Low (indoor person)' },
-        { value: 'medium', label: '🚴 Medium (mix of indoor/outdoor)' },
-        { value: 'high', label: '🏃 High (very active)' },
+        { value: 'low', label: 'Low (indoor person)' },
+        { value: 'medium', label: 'Medium (mix of indoor/outdoor)' },
+        { value: 'high', label: 'High (very active)' },
       ],
     },
   ]

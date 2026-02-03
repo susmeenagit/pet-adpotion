@@ -8,6 +8,7 @@ export const authApi = {
       email,
       password,
     });
+    console.log("Response for auth", response.data);
     return response.data;
   },
 

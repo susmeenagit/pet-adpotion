@@ -231,7 +231,7 @@ const PetDetails = () => {
                   onClick={() => navigate(`/adoption-application/${pet.id}`)}
                   className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-semibold text-lg shadow-md hover:shadow-lg"
                 >
-                  🐾 Apply to Adopt {pet.name}
+                   Apply to Adopt {pet.name}
                 </button>
               ) : (
                 <button
@@ -246,7 +246,7 @@ const PetDetails = () => {
                 onClick={() => navigate('/browse-pets')}
                 className="flex-1 border-2 border-purple-600 text-purple-600 px-8 py-4 rounded-lg hover:bg-purple-50 transition-colors font-semibold text-lg"
               >
-                🔍 Browse More Pets
+                Browse More Pets
               </button>
             </div>
           </div>

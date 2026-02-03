@@ -7,31 +7,31 @@ const AdoptionProcess = () => {
       number: 1,
       title: 'Choose a Pet',
       description: 'Browse through our collection of pets and find the one that matches your lifestyle and preferences.',
-      icon: '🐾',
+      icon: '',
     },
     {
       number: 2,
       title: 'Submit Adoption Request',
       description: 'Fill out the adoption application form with your details and reason for adoption.',
-      icon: '📝',
+      icon: '',
     },
     {
       number: 3,
       title: 'Verification Process',
       description: 'Our team will review your application and may contact you for additional information.',
-      icon: '✅',
+      icon: '',
     },
     {
       number: 4,
       title: 'Meet the Pet',
       description: 'Schedule a visit to meet your potential new family member in person.',
-      icon: '🤝',
+      icon: '',
     },
     {
       number: 5,
       title: 'Adoption Completed',
       description: 'Complete the final paperwork and welcome your new pet home!',
-      icon: '🏠',
+      icon: '',
     },
   ]
 
@@ -97,4 +97,3 @@ const AdoptionProcess = () => {
 }
 
 export default AdoptionProcess
-

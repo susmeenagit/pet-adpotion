@@ -37,7 +37,7 @@ const Navbar = () => {
               to="/quiz"
               className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
             >
-              🎯 Find Match
+               Find Match
             </Link>
             <Link
               to="/adoption-process"
